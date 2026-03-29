@@ -27,6 +27,9 @@ across automatically generated graph structures.
 - **Minimality (Invariant)**: Shortest path is minimal among all paths
 - **Symmetry (Invariant)**: d(u, v) = d(v, u) in undirected graphs
 - **Edge Addition (Metamorphic)**: Adding edges does not increase shortest path
+- **Triangle Inequality (Invariant)**: `d(u,v) ≤ d(u,w) + d(w,v)` for all node triples
+- **Self Distance (Boundary)**: Distance from any node to itself is zero
+- **Path Validity (Postcondition)**: Every step in the returned path is a real edge in the graph
 
 ---
 
