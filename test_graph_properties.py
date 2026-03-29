@@ -180,6 +180,117 @@ def test_shortest_path_edge_addition(G):
         f"Distance increased from {d_before} to {d_after} after adding direct edge."
     )
 
+
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_shortest_path_triangle_inequality(G):
+    """
+    Property (Invariant):
+        For any three nodes u, v, w:  d(u, v) ≤ d(u, w) + d(w, v).
+
+    Mathematical Foundation:
+        This is the triangle inequality — a fundamental axiom of any metric
+        space. Graph shortest-path distance is a metric, so it must satisfy
+        this property. Intuitively, going through an intermediate node w can
+        never be shorter than the direct shortest path.
+
+    Test Strategy:
+        Use the custom strategy for varied-weight graphs. Pick three distinct
+        nodes and verify the triangle inequality holds with weighted distances.
+
+    Preconditions:
+        Graph must be connected so all pairwise distances are finite.
+        Must have at least 3 nodes (guaranteed by strategy min_value=3).
+
+    Why This Matters:
+        Violation of the triangle inequality means the distance function is
+        not a true metric — indicating fundamental inconsistency in how the
+        algorithm computes distances.
+    """
+    nodes = list(G.nodes())
+    if len(nodes) < 3:
+        return
+    u, v, w = nodes[0], nodes[1], nodes[-1]
+
+    d_uv = nx.shortest_path_length(G, u, v, weight='weight')
+    d_uw = nx.shortest_path_length(G, u, w, weight='weight')
+    d_wv = nx.shortest_path_length(G, w, v, weight='weight')
+
+    assert d_uv <= d_uw + d_wv, (
+        f"Triangle inequality violated: d({u},{v})={d_uv} > "
+        f"d({u},{w})={d_uw} + d({w},{v})={d_wv}."
+    )
+
+
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_shortest_path_self_distance(G):
+    """
+    Property (Boundary Condition):
+        The shortest path distance from any node to itself is zero.
+
+    Mathematical Foundation:
+        The trivial path from a node to itself uses zero edges and has
+        zero total weight. No path can have negative length (weights ≥ 1
+        here), so zero is both the minimum and the correct answer.
+
+    Test Strategy:
+        Use the custom strategy for varied-weight graphs. Verify that the
+        weighted self-distance of the first node is exactly 0.
+
+    Preconditions:
+        Edge weights must be non-negative (all weights ≥ 1 here).
+
+    Why This Matters:
+        A non-zero self-distance would mean the algorithm is traversing
+        unnecessary edges or miscounting path lengths — a basic correctness failure.
+    """
+    node = list(G.nodes())[0]
+
+    assert nx.shortest_path_length(G, node, node, weight='weight') == 0, (
+        f"Self-distance of node {node} is not zero."
+    )
+
+
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_shortest_path_validity(G):
+    """
+    Property (Postcondition):
+        Every consecutive pair of nodes in the returned shortest path must
+        be connected by an actual edge in the graph.
+
+    Mathematical Foundation:
+        A path is defined as a sequence of nodes where each consecutive pair
+        is adjacent (connected by an edge). If the algorithm returns a sequence
+        where any consecutive pair is NOT an edge, it has returned something
+        that is not a valid path at all — regardless of its length.
+
+    Test Strategy:
+        Use the custom connected_weighted_graphs() strategy to generate graphs
+        with varied weights. Compute the shortest path between the first and
+        last node, then verify every step (u→v) in the path is a real edge in G.
+
+    Preconditions:
+        Graph must be connected so a path always exists.
+
+    Why This Matters:
+        An invalid path (containing non-existent edges) would mean the algorithm
+        is fabricating connections — a catastrophic correctness failure that
+        would corrupt any application relying on the path.
+    """
+    nodes = list(G.nodes())
+    source, target = nodes[0], nodes[-1]
+
+    path = nx.shortest_path(G, source, target, weight='weight')
+
+    for i in range(len(path) - 1):
+        u, v = path[i], path[i + 1]
+        assert G.has_edge(u, v), (
+            f"Path contains step ({u}→{v}) which is not an edge in the graph."
+        )
+
+
 # ================================
 # Minimum Spanning Tree Properties
 # ================================
@@ -346,5 +457,4 @@ def test_mst_idempotence(G):
         "MST is not idempotent: MST(MST(G)) ≠ MST(G)."
     )
 
-    assert set(T1.edges()) == set(T2.edges())
 
