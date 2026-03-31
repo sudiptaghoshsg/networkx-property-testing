@@ -457,4 +457,66 @@ def test_mst_idempotence(G):
         "MST is not idempotent: MST(MST(G)) ≠ MST(G)."
     )
 
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_mst_cut_property(G):
+    """
+    Property (Invariant — Cut Property):
+        For any cut of the graph, the minimum weight edge crossing the cut
+        must belong to the MST (assuming unique edge weights).
+
+    Mathematical Foundation:
+        The Cut Property is the theoretical foundation of both Prim's and
+        Kruskal's algorithms. Formally: given any partition of vertices into
+        two non-empty sets S and V\\S, the minimum weight edge with one
+        endpoint in S and the other in V\\S must be in every MST.
+        Proof: suppose edge e = (u,v) is the minimum cut edge but not in MST T.
+        Adding e to T creates a cycle. That cycle must cross the cut at least
+        twice, so another cut edge e' is in T. Since e is the minimum cut edge,
+        w(e) ≤ w(e'). Swapping e' for e gives a spanning tree of equal or
+        lesser weight — contradicting T being the unique MST if weights differ.
+
+    Test Strategy:
+        Use the custom strategy (varied weights) to generate graphs. Take the
+        first node as the cut set S = {nodes[0]}, and V\\S = all other nodes.
+        Find the minimum weight edge crossing this cut and assert it is in the MST.
+
+    Preconditions:
+        Graph must be connected. Works best with unique edge weights (varied
+        weights from strategy reduce ties). For graphs with many weight ties,
+        the property holds for at least one MST but may not hold for all.
+
+    Why This Matters:
+        This is arguably the deepest property in this test suite — it validates
+        the core theoretical guarantee that makes MST algorithms correct. A
+        failure here would mean the algorithm is not implementing the greedy
+        criterion properly.
+    """
+    nodes = list(G.nodes())
+    if len(nodes) < 2:
+        return
+
+    T = nx.minimum_spanning_tree(G)
+
+    # Cut: S = {nodes[0]}, complement = all other nodes
+    S = {nodes[0]}
+
+    # Find all edges crossing the cut and pick the minimum weight one
+    cut_edges = [
+        (u, v, G[u][v]['weight'])
+        for u, v in G.edges()
+        if (u in S) != (v in S)
+    ]
+
+    if not cut_edges:
+        return
+
+    min_weight = min(w for _, _, w in cut_edges)
+    min_cut_edges = [(u, v) for u, v, w in cut_edges if w == min_weight]
+
+    # At least one minimum cut edge must be in the MST
+    assert any(T.has_edge(u, v) or T.has_edge(v, u) for u, v in min_cut_edges), (
+        f"Cut property violated: no minimum-weight cut edge {min_cut_edges} "
+        f"(weight={min_weight}) is in the MST."
+    )   
 
