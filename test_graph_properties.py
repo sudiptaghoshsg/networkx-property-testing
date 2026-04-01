@@ -528,3 +528,46 @@ def test_mst_minimal_edges_property(G):
             break
 
 
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_mst_invariant_under_relabeling(G):
+    """
+    Property (Metamorphic):
+        Relabeling nodes does not change the number of MST edges or total weight.
+
+    Mathematical Foundation:
+        Graph algorithms operate on structure (topology and weights), not on
+        the names of nodes. Relabeling is an isomorphism — it produces a
+        structurally identical graph. The MST must have the same number of
+        edges and the same total weight, since the optimal spanning structure
+        is determined entirely by edge weights and connectivity.
+
+    Test Strategy:
+        Use the custom strategy for 100 varied-weight graphs. Compute MST of G,
+        relabel all nodes by adding 100, compute MST of relabeled graph, and
+        compare edge counts and total weights.
+
+    Preconditions:
+        Input graph must be connected.
+
+    Why This Matters:
+        If the MST changes under relabeling, the algorithm is incorrectly
+        using node identities to make structural decisions — a subtle but
+        serious implementation flaw.
+    """
+    mapping = {i: i + 100 for i in G.nodes()}
+    G2 = nx.relabel_nodes(G, mapping)
+
+    T1 = nx.minimum_spanning_tree(G)
+    T2 = nx.minimum_spanning_tree(G2)
+
+    assert len(T1.edges()) == len(T2.edges()), (
+        "MST edge count changed under node relabeling."
+    )
+
+    w1 = sum(d.get('weight', 1) for _, _, d in T1.edges(data=True))
+    w2 = sum(d.get('weight', 1) for _, _, d in T2.edges(data=True))
+    assert w1 == w2, (
+        f"MST total weight changed under relabeling: {w1} vs {w2}."
+    )
+
