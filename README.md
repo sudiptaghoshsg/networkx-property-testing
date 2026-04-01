@@ -129,5 +129,37 @@ networkx-property-testing/
 
 -----
 
+## Hypothesis Statistics
+
+Run with:
+```bash
+pytest test_graph_properties.py -v --hypothesis-show-statistics
+```
+
+Results (Python 3.13, Hypothesis 6.151.9):
+
+| Test | Examples Run | Failures | Stopped Because |
+|---|---|---|---|
+| `test_shortest_path_minimality` | 100 | 0 | max_examples=100 |
+| `test_shortest_path_symmetry` | 100 | 0 | max_examples=100 |
+| `test_shortest_path_edge_addition` | 100 | 0 | max_examples=100 |
+| `test_shortest_path_triangle_inequality` | 100 | 0 | max_examples=100 |
+| `test_shortest_path_self_distance` | 100 | 0 | max_examples=100 |
+| `test_shortest_path_validity` | 100 | 0 | max_examples=100 |
+| `test_shortest_path_optimal_substructure` | 100 | 0 | max_examples=100 |
+| `test_dijkstra_varied_weights` | 100 | 0 | max_examples=100 |
+| `test_mst_edge_count` | 100 | 0 | max_examples=100 |
+| `test_mst_is_tree` | 100 | 0 | max_examples=100 |
+| `test_mst_spans_all_nodes` | 100 | 0 | max_examples=100 |
+| `test_mst_edge_removal_disconnects` | 100 | 0 | max_examples=100 |
+| `test_mst_idempotence` | 100 | 0 | max_examples=100 |
+| `test_mst_cut_property` | 100 | 0 | max_examples=100 |
+| `test_mst_subgraph_property` | 100 | 0 | max_examples=100 |
+| `test_mst_minimal_edges_property` | 100 | 0 | max_examples=100 |
+| `test_mst_invariant_under_relabeling` | 100 | 0 | max_examples=100 |
+
+**Total: 1,700 automatically generated graph examples tested across 17 tests. 0 failures.**
+
+
 - [Hypothesis documentation](https://hypothesis.readthedocs.io/)
 - [NetworkX documentation](https://networkx.org/documentation/stable/)
