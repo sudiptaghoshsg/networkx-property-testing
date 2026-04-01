@@ -572,3 +572,55 @@ def test_mst_cut_property(G):
         f"(weight={min_weight}) is in the MST."
     )   
 
+@settings(max_examples=100)
+@given(connected_weighted_graphs(), connected_weighted_graphs())
+def test_mst_on_disconnected_graph_returns_forest(G1, G2):
+    """
+    Property (Boundary Condition):
+        Applying nx.minimum_spanning_tree to a disconnected graph returns a
+        spanning forest — one tree per connected component.
+
+    Mathematical Foundation:
+        When a graph is disconnected, no single spanning tree can connect all
+        vertices (by definition, spanning trees require connectivity). Instead,
+        the algorithm produces a spanning forest: a set of trees, one for each
+        connected component. If component i has k_i nodes, its spanning tree
+        has k_i - 1 edges. The total edges in the forest = sum(k_i - 1) =
+        n - (number of components).
+
+    Test Strategy:
+        Use two independent connected_weighted_graphs() draws to create two
+        separate components with varied topologies and weights. Relabel G2 to
+        avoid node ID collisions, compose into a disconnected graph, and verify:
+        (1) total edges = (n1 - 1) + (n2 - 1)
+        (2) the forest has exactly 2 connected components.
+
+    Preconditions:
+        The two sub-graphs must be non-empty and not connected to each other.
+
+    Why This Matters:
+        Many MST implementations assume connected input. Testing on disconnected
+        graphs reveals whether the algorithm gracefully handles the forest case
+        or incorrectly assumes a single spanning tree always exists.
+    """
+    n1 = G1.number_of_nodes()
+    n2 = G2.number_of_nodes()
+
+    # Relabel G2 nodes to avoid overlap with G1
+    offset = max(G1.nodes()) + 100
+    mapping = {node: node + offset for node in G2.nodes()}
+    G2 = nx.relabel_nodes(G2, mapping)
+
+    G = nx.compose(G1, G2)  # disjoint union — no edges between components
+
+    F = nx.minimum_spanning_tree(G)
+
+    expected_edges = (n1 - 1) + (n2 - 1)
+    assert F.number_of_edges() == expected_edges, (
+        f"Spanning forest should have {expected_edges} edges, got {F.number_of_edges()}."
+    )
+
+    components = list(nx.connected_components(F))
+    assert len(components) == 2, (
+        f"Spanning forest should have 2 components, got {len(components)}."
+    )
