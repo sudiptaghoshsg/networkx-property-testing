@@ -571,3 +571,61 @@ def test_mst_invariant_under_relabeling(G):
         f"MST total weight changed under relabeling: {w1} vs {w2}."
     )
 
+
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_shortest_path_optimal_substructure(G):
+    """
+    Property (Invariant — Optimal Substructure):
+        Every sub-path of a shortest path is itself a shortest path.
+
+    Mathematical Foundation:
+        This is the principle of optimal substructure, which is WHY Dijkstra's
+        algorithm and dynamic programming work on shortest paths. Formally:
+        if P = (v0, v1, ..., vk) is a shortest path from v0 to vk, then for
+        any i < j, the sub-path P[i:j] = (vi, ..., vj) is a shortest path
+        from vi to vj. Proof by contradiction: if a shorter path from vi to vj
+        existed, we could substitute it into P to get a shorter path from
+        v0 to vk — contradicting P being shortest.
+
+    Test Strategy:
+        Compute the shortest path P from source to target. For each intermediate
+        node w in P, verify that the sub-path from source to w has the same
+        length as the direct shortest path from source to w.
+
+    Preconditions:
+        Graph must be connected. Path must have at least 3 nodes (length ≥ 2)
+        to have a meaningful intermediate node.
+
+    Why This Matters:
+        If this property fails, Dijkstra is not exploiting optimal substructure
+        correctly — meaning its dynamic programming foundation is broken, and
+        it cannot guarantee globally optimal paths.
+    """
+    nodes = list(G.nodes())
+    source, target = nodes[0], nodes[-1]
+
+    path = nx.shortest_path(G, source, target, weight='weight')
+
+    if len(path) < 3:
+        return  # Need at least one intermediate node to test substructure
+
+    for i in range(1, len(path)):
+        subpath = path[:i+1]
+
+        # Compute weight of subpath (actual path taken)
+        subpath_weight = sum(
+            G[subpath[j]][subpath[j+1]]['weight']
+            for j in range(len(subpath) - 1)
+        )
+
+        # Compute true shortest path weight independently
+        shortest_weight = nx.shortest_path_length(
+            G, source, subpath[-1], weight='weight'
+        )
+
+        assert subpath_weight == shortest_weight, (
+            f"Optimal substructure violated: subpath weight {subpath_weight} "
+            f"!= shortest weight {shortest_weight}"
+        )
+
