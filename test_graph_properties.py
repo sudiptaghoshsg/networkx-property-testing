@@ -458,7 +458,6 @@ def test_mst_idempotence(G):
     )
 
 
-
 @settings(max_examples=100)
 @given(connected_weighted_graphs())
 def test_mst_subgraph_property(G):
@@ -489,4 +488,43 @@ def test_mst_subgraph_property(G):
         assert G.has_edge(u, v), (
             f"MST contains edge ({u}, {v}) which does not exist in original graph."
         )
+
+
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_mst_minimal_edges_property(G):
+    """
+    Property (Invariant):
+        Adding any non-tree edge from the original graph to the MST creates a cycle.
+
+    Mathematical Foundation:
+        A spanning tree has n-1 edges. Adding any additional edge between two
+        vertices already connected by the tree creates a cycle (the new edge
+        plus the unique path between its endpoints in the tree). This is the
+        cycle property of trees.
+
+    Test Strategy:
+        Use the custom strategy for 100 varied-weight graphs. Find an edge in G
+        not in the MST, add it to a copy of the MST, and verify the result is
+        no longer a valid tree.
+
+    Preconditions:
+        The graph must have at least one edge not in the MST (typical for
+        random graphs which have more edges than n-1).
+
+    Why This Matters:
+        If adding a non-tree edge does NOT create a cycle, the MST is missing
+        an edge it should have — meaning it does not span all vertices.
+    """
+    T = nx.minimum_spanning_tree(G)
+
+    for u, v in G.edges():
+        if not T.has_edge(u, v):
+            T_copy = T.copy()
+            T_copy.add_edge(u, v)
+            assert not nx.is_tree(T_copy), (
+                f"Adding non-tree edge ({u},{v}) to MST did not create a cycle."
+            )
+            break
+
 
