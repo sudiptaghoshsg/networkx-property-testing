@@ -629,3 +629,49 @@ def test_shortest_path_optimal_substructure(G):
             f"!= shortest weight {shortest_weight}"
         )
 
+
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_dijkstra_varied_weights(G):
+    """
+    Property (Invariant):
+        Dijkstra's algorithm returns the correct shortest path even with
+        varied positive edge weights (not just unit weights).
+
+    Mathematical Foundation:
+        With varied weights, the shortest path by total weight may differ
+        from the path with fewest hops. Dijkstra's algorithm must correctly
+        minimize total edge weight, not hop count. This property verifies
+        that the weighted shortest path length from u to v is at most the
+        weight of any other path found via all_simple_paths.
+
+    Test Strategy:
+        Use the custom strategy to generate graphs with random positive
+        weights (1–20). Compute the weighted shortest path length, then
+        enumerate all simple paths and compute their total weights to verify
+        none is cheaper.
+
+    Preconditions:
+        All edge weights must be positive (guaranteed by strategy: min=1).
+        Graph must be connected.
+
+    Why This Matters:
+        Unit-weight tests only verify BFS correctness. This test exercises
+        the priority-queue logic that makes Dijkstra handle varied weights —
+        a much stronger correctness check.
+    """
+    nodes = list(G.nodes())
+    source, target = nodes[0], nodes[-1]
+
+    if source == target:
+        return
+
+    best = nx.shortest_path_length(G, source, target, weight='weight')
+
+    for path in nx.all_simple_paths(G, source, target):
+        path_weight = sum(G[path[i]][path[i+1]]['weight'] for i in range(len(path)-1))
+        assert best <= path_weight, (
+            f"Dijkstra returned length {best} but a path with weight "
+            f"{path_weight} exists — shortest path is not minimal."
+        )
+
