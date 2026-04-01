@@ -458,3 +458,35 @@ def test_mst_idempotence(G):
     )
 
 
+
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_mst_subgraph_property(G):
+    """
+    Property (Postcondition):
+        Every edge in the MST must be an edge in the original graph.
+
+    Mathematical Foundation:
+        A spanning tree is by definition a subgraph of the original graph.
+        It cannot introduce new edges that were not in G — it can only
+        select a subset of G's edges.
+
+    Test Strategy:
+        Use the custom strategy for 100 varied-weight graphs. Iterate over
+        all MST edges and assert each exists in G.
+
+    Preconditions:
+        Input graph must be connected.
+
+    Why This Matters:
+        If the MST contains an edge not in G, the algorithm has fabricated
+        a connection — a critical bug invalidating any result depending on
+        actual graph structure.
+    """
+    T = nx.minimum_spanning_tree(G)
+
+    for u, v in T.edges():
+        assert G.has_edge(u, v), (
+            f"MST contains edge ({u}, {v}) which does not exist in original graph."
+        )
+
