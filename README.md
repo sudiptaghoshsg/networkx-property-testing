@@ -38,6 +38,7 @@ across automatically generated graph structures.
 - **Tree Structure (Invariant)**: MST is acyclic and connected
 - **Spanning (Postcondition)**: Includes all nodes
 - **Edge Removal (Metamorphic)**: Removing any edge disconnects the MST
+- **Cut Property (Invariant)**: Minimum weight cut edge must belong to the MST (theoretical foundation of Prim/Kruskal)
 
 ---
 
