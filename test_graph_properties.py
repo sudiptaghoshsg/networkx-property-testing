@@ -5,15 +5,22 @@ Author: Sudipta Ghosh and Shambo Samanta
 Course: Data Structures and Graph Analytics
 
 Algorithms Tested:
-1. Shortest Path (Dijkstra)
-2. Minimum Spanning Tree (MST)
+1. Shortest Path (Dijkstra for weighted graphs, BFS for unweighted cases)
+2. Minimum Spanning Tree (Kruskal / Prim)
 
 Description:
-This project uses property-based testing with the Hypothesis library to verify
-fundamental mathematical properties and invariants of graph algorithms across
-automatically generated graphs of varying sizes, densities, and topologies.
-Rather than testing specific hand-crafted examples, each test captures a general
-truth about the algorithm that must hold for ALL valid inputs.
+    This project applies property-based testing using the Hypothesis library
+    to verify fundamental mathematical properties and invariants of graph
+    algorithms over a wide range of automatically generated inputs.
+
+    Instead of relying on fixed, hand-crafted examples, each test encodes a
+    general property that must hold for all valid graphs. Hypothesis then
+    generates diverse graph instances — varying in size, topology, and edge
+    weights — to systematically search for counterexamples.
+
+    The focus is on validating correctness guarantees such as optimality,
+    symmetry, cut and cycle properties, and robustness under edge cases
+    and adversarial conditions.
 """
 
 import networkx as nx
@@ -840,3 +847,75 @@ def test_mst_invariant_under_relabeling(G):
         f"MST total weight changed under relabeling: {w1} vs {w2}."
     )
 
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_mst_cycle_property(G):
+    """
+    Property (Invariant — Cycle Property):
+        For any cycle in the graph, the maximum weight edge in that cycle
+        must NOT be in the MST (when all edge weights are distinct).
+
+    Mathematical Foundation:
+        The Cycle Property is the exact dual of the Cut Property, and
+        together they completely characterize minimum spanning trees:
+
+            Cut Property:   min weight cut edge  → MUST be in MST
+            Cycle Property: max weight cycle edge → MUST NOT be in MST
+
+        Proof by contradiction: suppose the maximum weight edge e = (u,v)
+        in some cycle C IS in the MST T. Removing e splits T into two
+        components. Since C is a cycle, there must be another path in C
+        from u to v not using e. That path contains at least one edge e'
+        crossing the same cut, and since e is the MAX weight edge in C,
+        w(e') ≤ w(e). Replacing e with e' gives a spanning tree of equal
+        or lesser weight — contradicting e being in the unique MST when
+        all weights are distinct.
+
+    Test Strategy:
+        Use the custom strategy to generate varied-weight graphs. For each
+        cycle found via nx.cycle_basis (which returns a set of fundamental
+        cycles), find the maximum weight edge in that cycle and verify it
+        is NOT in the MST. Only run this check when all edge weights in
+        the cycle are distinct (to avoid tie-breaking ambiguity).
+
+    Preconditions:
+        Graph must be connected and have at least one cycle (i.e., more
+        edges than n-1). Cycle Property applies cleanly only when the
+        maximum weight edge in the cycle is unique (no ties).
+
+    Why This Matters:
+        Together with the Cut Property (already tested), the Cycle Property
+        forms the complete mathematical characterization of MSTs. A violation
+        means the algorithm kept a provably sub-optimal edge — the greedy
+        exclusion criterion at the heart of Kruskal's algorithm is broken.
+    """
+    T = nx.minimum_spanning_tree(G)
+
+    # nx.cycle_basis returns a minimal set of cycles that span all cycles
+    cycles = nx.cycle_basis(G)
+
+    if not cycles:
+        return  # graph is already a tree, no cycles to check
+
+    for cycle_nodes in cycles:
+        # Reconstruct the cycle edges from the node sequence
+        cycle_edges = []
+        for i in range(len(cycle_nodes)):
+            u = cycle_nodes[i]
+            v = cycle_nodes[(i + 1) % len(cycle_nodes)]
+            if G.has_edge(u, v):
+                cycle_edges.append((u, v, G[u][v]['weight']))
+
+        if len(cycle_edges) < 2:
+            continue
+
+        max_weight = max(w for _, _, w in cycle_edges)
+        max_edges = [(u, v) for u, v, w in cycle_edges if w == max_weight]
+
+        # Only assert when the maximum is unique (no tie-breaking ambiguity)
+        if len(max_edges) == 1:
+            u, v = max_edges[0]
+            assert not (T.has_edge(u, v) or T.has_edge(v, u)), (
+                f"Cycle property violated: maximum weight edge ({u},{v}) "
+                f"with weight={max_weight} is in the MST but should not be."
+            )
