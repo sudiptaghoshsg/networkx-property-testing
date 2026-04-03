@@ -1189,3 +1189,54 @@ def test_mst_cycle_property(G):
                 f"Cycle property violated: maximum weight edge ({u},{v}) "
                 f"with weight={max_weight} is in the MST but should not be."
             )
+
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_mst_total_weight_minimality(G):
+    """
+    Property (Invariant — Global Optimality):
+        The total weight of the MST must be less than or equal to the
+        total weight of every other spanning tree of the graph.
+
+    Mathematical Foundation:
+        This is the direct definition of a minimum spanning tree —
+        it is the spanning tree with the lowest possible total edge weight.
+        All other spanning trees must have weight ≥ MST weight.
+        This test verifies global optimality by exhaustive comparison:
+        enumerate every spanning tree of G and assert none is cheaper.
+
+        A spanning tree of G is any connected acyclic subgraph that includes
+        all vertices. NetworkX's nx.SpanningTreeIterator enumerates all of
+        them in order of increasing weight.
+
+    Test Strategy:
+        Use the custom strategy for small varied-weight graphs (≤ 7 nodes
+        to keep enumeration tractable). Compute the MST weight, then use
+        nx.SpanningTreeIterator to enumerate ALL spanning trees and verify
+        none has a lower total weight than the MST.
+
+    Preconditions:
+        Graph must be connected. Kept small (n ≤ 7) because the number of
+        spanning trees grows exponentially — Cayley's formula gives n^(n-2)
+        for complete graphs, so n=7 gives at most 7^5 = 16,807 trees.
+
+    Why This Matters:
+        This is the most direct possible correctness check — it literally
+        verifies the definition of "minimum" by comparing against every
+        alternative. All other MST tests verify structural properties
+        (tree shape, edge count, cut/cycle conditions). This test directly
+        verifies the weight optimality guarantee.
+    """
+    # Keep small for tractability — limit to graphs with ≤ 7 nodes
+    if G.number_of_nodes() > 7:
+        return
+
+    T = nx.minimum_spanning_tree(G)
+    mst_weight = sum(d['weight'] for _, _, d in T.edges(data=True))
+
+    for spanning_tree in nx.SpanningTreeIterator(G):
+        tree_weight = sum(d['weight'] for _, _, d in spanning_tree.edges(data=True))
+        assert mst_weight <= tree_weight, (
+            f"MST weight {mst_weight} is greater than another spanning tree "
+            f"with weight {tree_weight} — MST is not globally minimum."
+        )
