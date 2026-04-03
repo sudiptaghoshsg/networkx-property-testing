@@ -343,6 +343,110 @@ def test_shortest_path_monotonicity_under_weight_increase(G, data):
     )
         
 
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_shortest_path_optimal_substructure(G):
+    """
+    Property (Invariant — Optimal Substructure):
+        Every sub-path of a shortest path is itself a shortest path.
+
+    Mathematical Foundation:
+        This is the principle of optimal substructure, which is WHY Dijkstra's
+        algorithm and dynamic programming work on shortest paths. Formally:
+        if P = (v0, v1, ..., vk) is a shortest path from v0 to vk, then for
+        any i < j, the sub-path P[i:j] = (vi, ..., vj) is a shortest path
+        from vi to vj. Proof by contradiction: if a shorter path from vi to vj
+        existed, we could substitute it into P to get a shorter path from
+        v0 to vk — contradicting P being shortest.
+
+    Test Strategy:
+        Compute the shortest path P from source to target. For each intermediate
+        node w in P, verify that the sub-path from source to w has the same
+        length as the direct shortest path from source to w.
+
+    Preconditions:
+        Graph must be connected. Path must have at least 3 nodes (length ≥ 2)
+        to have a meaningful intermediate node.
+
+    Why This Matters:
+        If this property fails, Dijkstra is not exploiting optimal substructure
+        correctly — meaning its dynamic programming foundation is broken, and
+        it cannot guarantee globally optimal paths.
+    """
+    nodes = list(G.nodes())
+    source, target = nodes[0], nodes[-1]
+
+    path = nx.shortest_path(G, source, target, weight='weight')
+
+    if len(path) < 3:
+        return  # Need at least one intermediate node to test substructure
+
+    for i in range(1, len(path)):
+        subpath = path[:i+1]
+
+        # Compute weight of subpath (actual path taken)
+        subpath_weight = sum(
+            G[subpath[j]][subpath[j+1]]['weight']
+            for j in range(len(subpath) - 1)
+        )
+
+        # Compute true shortest path weight independently
+        shortest_weight = nx.shortest_path_length(
+            G, source, subpath[-1], weight='weight'
+        )
+
+        assert subpath_weight == shortest_weight, (
+            f"Optimal substructure violated: subpath weight {subpath_weight} "
+            f"!= shortest weight {shortest_weight}"
+        )
+
+
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_dijkstra_varied_weights(G):
+    """
+    Property (Invariant):
+        Dijkstra's algorithm returns the correct shortest path even with
+        varied positive edge weights (not just unit weights).
+
+    Mathematical Foundation:
+        With varied weights, the shortest path by total weight may differ
+        from the path with fewest hops. Dijkstra's algorithm must correctly
+        minimize total edge weight, not hop count. This property verifies
+        that the weighted shortest path length from u to v is at most the
+        weight of any other path found via all_simple_paths.
+
+    Test Strategy:
+        Use the custom strategy to generate graphs with random positive
+        weights (1–20). Compute the weighted shortest path length, then
+        enumerate all simple paths and compute their total weights to verify
+        none is cheaper.
+
+    Preconditions:
+        All edge weights must be positive (guaranteed by strategy: min=1).
+        Graph must be connected.
+
+    Why This Matters:
+        Unit-weight tests only verify BFS correctness. This test exercises
+        the priority-queue logic that makes Dijkstra handle varied weights —
+        a much stronger correctness check.
+    """
+    nodes = list(G.nodes())
+    source, target = nodes[0], nodes[-1]
+
+    if source == target:
+        return
+
+    best = nx.shortest_path_length(G, source, target, weight='weight')
+
+    for path in nx.all_simple_paths(G, source, target):
+        path_weight = sum(G[path[i]][path[i+1]]['weight'] for i in range(len(path)-1))
+        assert best <= path_weight, (
+            f"Dijkstra returned length {best} but a path with weight "
+            f"{path_weight} exists — shortest path is not minimal."
+        )
+
+
 # ================================
 # Minimum Spanning Tree Properties
 # ================================
@@ -624,3 +728,115 @@ def test_mst_on_disconnected_graph_returns_forest(G1, G2):
     assert len(components) == 2, (
         f"Spanning forest should have 2 components, got {len(components)}."
     )
+@given(connected_weighted_graphs())
+def test_mst_subgraph_property(G):
+    """
+    Property (Postcondition):
+        Every edge in the MST must be an edge in the original graph.
+
+    Mathematical Foundation:
+        A spanning tree is by definition a subgraph of the original graph.
+        It cannot introduce new edges that were not in G — it can only
+        select a subset of G's edges.
+
+    Test Strategy:
+        Use the custom strategy for 100 varied-weight graphs. Iterate over
+        all MST edges and assert each exists in G.
+
+    Preconditions:
+        Input graph must be connected.
+
+    Why This Matters:
+        If the MST contains an edge not in G, the algorithm has fabricated
+        a connection — a critical bug invalidating any result depending on
+        actual graph structure.
+    """
+    T = nx.minimum_spanning_tree(G)
+
+    for u, v in T.edges():
+        assert G.has_edge(u, v), (
+            f"MST contains edge ({u}, {v}) which does not exist in original graph."
+        )
+
+
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_mst_minimal_edges_property(G):
+    """
+    Property (Invariant):
+        Adding any non-tree edge from the original graph to the MST creates a cycle.
+
+    Mathematical Foundation:
+        A spanning tree has n-1 edges. Adding any additional edge between two
+        vertices already connected by the tree creates a cycle (the new edge
+        plus the unique path between its endpoints in the tree). This is the
+        cycle property of trees.
+
+    Test Strategy:
+        Use the custom strategy for 100 varied-weight graphs. Find an edge in G
+        not in the MST, add it to a copy of the MST, and verify the result is
+        no longer a valid tree.
+
+    Preconditions:
+        The graph must have at least one edge not in the MST (typical for
+        random graphs which have more edges than n-1).
+
+    Why This Matters:
+        If adding a non-tree edge does NOT create a cycle, the MST is missing
+        an edge it should have — meaning it does not span all vertices.
+    """
+    T = nx.minimum_spanning_tree(G)
+
+    for u, v in G.edges():
+        if not T.has_edge(u, v):
+            T_copy = T.copy()
+            T_copy.add_edge(u, v)
+            assert not nx.is_tree(T_copy), (
+                f"Adding non-tree edge ({u},{v}) to MST did not create a cycle."
+            )
+            break
+
+
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_mst_invariant_under_relabeling(G):
+    """
+    Property (Metamorphic):
+        Relabeling nodes does not change the number of MST edges or total weight.
+
+    Mathematical Foundation:
+        Graph algorithms operate on structure (topology and weights), not on
+        the names of nodes. Relabeling is an isomorphism — it produces a
+        structurally identical graph. The MST must have the same number of
+        edges and the same total weight, since the optimal spanning structure
+        is determined entirely by edge weights and connectivity.
+
+    Test Strategy:
+        Use the custom strategy for 100 varied-weight graphs. Compute MST of G,
+        relabel all nodes by adding 100, compute MST of relabeled graph, and
+        compare edge counts and total weights.
+
+    Preconditions:
+        Input graph must be connected.
+
+    Why This Matters:
+        If the MST changes under relabeling, the algorithm is incorrectly
+        using node identities to make structural decisions — a subtle but
+        serious implementation flaw.
+    """
+    mapping = {i: i + 100 for i in G.nodes()}
+    G2 = nx.relabel_nodes(G, mapping)
+
+    T1 = nx.minimum_spanning_tree(G)
+    T2 = nx.minimum_spanning_tree(G2)
+
+    assert len(T1.edges()) == len(T2.edges()), (
+        "MST edge count changed under node relabeling."
+    )
+
+    w1 = sum(d.get('weight', 1) for _, _, d in T1.edges(data=True))
+    w2 = sum(d.get('weight', 1) for _, _, d in T2.edges(data=True))
+    assert w1 == w2, (
+        f"MST total weight changed under relabeling: {w1} vs {w2}."
+    )
+
