@@ -5,15 +5,22 @@ Author: Sudipta Ghosh and Shambo Samanta
 Course: Data Structures and Graph Analytics
 
 Algorithms Tested:
-1. Shortest Path (Dijkstra)
-2. Minimum Spanning Tree (MST)
+1. Shortest Path (Dijkstra for weighted graphs, BFS for unweighted cases)
+2. Minimum Spanning Tree (Kruskal / Prim)
 
 Description:
-This project uses property-based testing with the Hypothesis library to verify
-fundamental mathematical properties and invariants of graph algorithms across
-automatically generated graphs of varying sizes, densities, and topologies.
-Rather than testing specific hand-crafted examples, each test captures a general
-truth about the algorithm that must hold for ALL valid inputs.
+    This project applies property-based testing using the Hypothesis library
+    to verify fundamental mathematical properties and invariants of graph
+    algorithms over a wide range of automatically generated inputs.
+
+    Instead of relying on fixed, hand-crafted examples, each test encodes a
+    general property that must hold for all valid graphs. Hypothesis then
+    generates diverse graph instances — varying in size, topology, and edge
+    weights — to systematically search for counterexamples.
+
+    The focus is on validating correctness guarantees such as optimality,
+    symmetry, cut and cycle properties, and robustness under edge cases
+    and adversarial conditions.
 """
 
 import networkx as nx
@@ -290,6 +297,58 @@ def test_shortest_path_validity(G):
             f"Path contains step ({u}→{v}) which is not an edge in the graph."
         )
 
+@settings(max_examples=100)
+@given(connected_weighted_graphs(), st.data())
+def test_shortest_path_monotonicity_under_weight_increase(G, data):
+    """
+    Property (Metamorphic — Monotonicity):
+        Increasing the weight of any edge can only increase or maintain
+        the shortest path distance — it can never decrease it.
+
+    Mathematical Foundation:
+        Let d(u,v) be the shortest path distance with original weights.
+        If we increase the weight of edge (a,b) by δ > 0, the new distance
+        d'(u,v) ≥ d(u,v). This follows because:
+        (1) If the shortest path does not use (a,b), d'(u,v) = d(u,v).
+        (2) If the shortest path uses (a,b), its cost increases by δ.
+            Any alternative path already existed and cost ≥ d(u,v) before
+            the increase — so d'(u,v) ≥ d(u,v) in either case.
+
+    Test Strategy:
+        Use the custom strategy for a varied-weight graph. Record the
+        original distance between first and last node. Use st.data() to
+        draw a random edge and a positive increment δ (1–10) via Hypothesis
+        — fully reproducible and shrinkable. Increase that edge's weight
+        by δ and recompute. Assert the new distance is ≥ the original.
+
+    Preconditions:
+        Graph must be connected. Weight increment must be positive (δ ≥ 1).
+
+    Why This Matters:
+        If distance decreases after a weight increase, the algorithm is
+        not correctly recomputing paths after graph modifications — a
+        serious bug that would cause incorrect results in any dynamic
+        shortest-path application.
+    """
+    nodes = list(G.nodes())
+    source, target = nodes[0], nodes[-1]
+
+    d_before = nx.shortest_path_length(G, source, target, weight='weight')
+
+    # Draw a random edge and increment fully via Hypothesis — reproducible
+    edge = data.draw(st.sampled_from(list(G.edges())))
+    delta = data.draw(st.integers(min_value=1, max_value=10))
+
+    u, v = edge
+    G[u][v]['weight'] += delta
+
+    d_after = nx.shortest_path_length(G, source, target, weight='weight')
+
+    assert d_after >= d_before, (
+        f"Monotonicity violated: distance decreased from {d_before} to "
+        f"{d_after} after increasing edge ({u},{v}) weight by {delta}."
+    )
+        
 
 @settings(max_examples=100)
 @given(connected_weighted_graphs())
@@ -654,8 +713,121 @@ def test_mst_idempotence(G):
         "MST is not idempotent: MST(MST(G)) ≠ MST(G)."
     )
 
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_mst_cut_property(G):
+    """
+    Property (Invariant — Cut Property):
+        For any cut of the graph, the minimum weight edge crossing the cut
+        must belong to the MST (assuming unique edge weights).
+
+    Mathematical Foundation:
+        The Cut Property is the theoretical foundation of both Prim's and
+        Kruskal's algorithms. Formally: given any partition of vertices into
+        two non-empty sets S and V\\S, the minimum weight edge with one
+        endpoint in S and the other in V\\S must be in every MST.
+        Proof: suppose edge e = (u,v) is the minimum cut edge but not in MST T.
+        Adding e to T creates a cycle. That cycle must cross the cut at least
+        twice, so another cut edge e' is in T. Since e is the minimum cut edge,
+        w(e) ≤ w(e'). Swapping e' for e gives a spanning tree of equal or
+        lesser weight — contradicting T being the unique MST if weights differ.
+
+    Test Strategy:
+        Use the custom strategy (varied weights) to generate graphs. Take the
+        first node as the cut set S = {nodes[0]}, and V\\S = all other nodes.
+        Find the minimum weight edge crossing this cut and assert it is in the MST.
+
+    Preconditions:
+        Graph must be connected. Works best with unique edge weights (varied
+        weights from strategy reduce ties). For graphs with many weight ties,
+        the property holds for at least one MST but may not hold for all.
+
+    Why This Matters:
+        This is arguably the deepest property in this test suite — it validates
+        the core theoretical guarantee that makes MST algorithms correct. A
+        failure here would mean the algorithm is not implementing the greedy
+        criterion properly.
+    """
+    nodes = list(G.nodes())
+    if len(nodes) < 2:
+        return
+
+    T = nx.minimum_spanning_tree(G)
+
+    # Cut: S = {nodes[0]}, complement = all other nodes
+    S = {nodes[0]}
+
+    # Find all edges crossing the cut and pick the minimum weight one
+    cut_edges = [
+        (u, v, G[u][v]['weight'])
+        for u, v in G.edges()
+        if (u in S) != (v in S)
+    ]
+
+    if not cut_edges:
+        return
+
+    min_weight = min(w for _, _, w in cut_edges)
+    min_cut_edges = [(u, v) for u, v, w in cut_edges if w == min_weight]
+
+    # At least one minimum cut edge must be in the MST
+    assert any(T.has_edge(u, v) or T.has_edge(v, u) for u, v in min_cut_edges), (
+        f"Cut property violated: no minimum-weight cut edge {min_cut_edges} "
+        f"(weight={min_weight}) is in the MST."
+    )   
 
 @settings(max_examples=100)
+@given(connected_weighted_graphs(), connected_weighted_graphs())
+def test_mst_on_disconnected_graph_returns_forest(G1, G2):
+    """
+    Property (Boundary Condition):
+        Applying nx.minimum_spanning_tree to a disconnected graph returns a
+        spanning forest — one tree per connected component.
+
+    Mathematical Foundation:
+        When a graph is disconnected, no single spanning tree can connect all
+        vertices (by definition, spanning trees require connectivity). Instead,
+        the algorithm produces a spanning forest: a set of trees, one for each
+        connected component. If component i has k_i nodes, its spanning tree
+        has k_i - 1 edges. The total edges in the forest = sum(k_i - 1) =
+        n - (number of components).
+
+    Test Strategy:
+        Use two independent connected_weighted_graphs() draws to create two
+        separate components with varied topologies and weights. Relabel G2 to
+        avoid node ID collisions, compose into a disconnected graph, and verify:
+        (1) total edges = (n1 - 1) + (n2 - 1)
+        (2) the forest has exactly 2 connected components.
+
+    Preconditions:
+        The two sub-graphs must be non-empty and not connected to each other.
+
+    Why This Matters:
+        Many MST implementations assume connected input. Testing on disconnected
+        graphs reveals whether the algorithm gracefully handles the forest case
+        or incorrectly assumes a single spanning tree always exists.
+    """
+    n1 = G1.number_of_nodes()
+    n2 = G2.number_of_nodes()
+
+    # Relabel G2 nodes to avoid overlap with G1
+    offset = max(G1.nodes()) + 100
+    mapping = {node: node + offset for node in G2.nodes()}
+    G2 = nx.relabel_nodes(G2, mapping)
+
+    G = nx.compose(G1, G2)  # disjoint union — no edges between components
+
+    F = nx.minimum_spanning_tree(G)
+
+    expected_edges = (n1 - 1) + (n2 - 1)
+    assert F.number_of_edges() == expected_edges, (
+        f"Spanning forest should have {expected_edges} edges, got {F.number_of_edges()}."
+    )
+
+    components = list(nx.connected_components(F))
+    assert len(components) == 2, (
+        f"Spanning forest should have 2 components, got {len(components)}."
+    )
 @given(connected_weighted_graphs())
 def test_mst_subgraph_property(G):
     """
@@ -945,3 +1117,75 @@ def test_mst_cut_and_cycle_duality(G):
             f"the MST is not actually minimum."
         )
 
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_mst_cycle_property(G):
+    """
+    Property (Invariant — Cycle Property):
+        For any cycle in the graph, the maximum weight edge in that cycle
+        must NOT be in the MST (when all edge weights are distinct).
+
+    Mathematical Foundation:
+        The Cycle Property is the exact dual of the Cut Property, and
+        together they completely characterize minimum spanning trees:
+
+            Cut Property:   min weight cut edge  → MUST be in MST
+            Cycle Property: max weight cycle edge → MUST NOT be in MST
+
+        Proof by contradiction: suppose the maximum weight edge e = (u,v)
+        in some cycle C IS in the MST T. Removing e splits T into two
+        components. Since C is a cycle, there must be another path in C
+        from u to v not using e. That path contains at least one edge e'
+        crossing the same cut, and since e is the MAX weight edge in C,
+        w(e') ≤ w(e). Replacing e with e' gives a spanning tree of equal
+        or lesser weight — contradicting e being in the unique MST when
+        all weights are distinct.
+
+    Test Strategy:
+        Use the custom strategy to generate varied-weight graphs. For each
+        cycle found via nx.cycle_basis (which returns a set of fundamental
+        cycles), find the maximum weight edge in that cycle and verify it
+        is NOT in the MST. Only run this check when all edge weights in
+        the cycle are distinct (to avoid tie-breaking ambiguity).
+
+    Preconditions:
+        Graph must be connected and have at least one cycle (i.e., more
+        edges than n-1). Cycle Property applies cleanly only when the
+        maximum weight edge in the cycle is unique (no ties).
+
+    Why This Matters:
+        Together with the Cut Property (already tested), the Cycle Property
+        forms the complete mathematical characterization of MSTs. A violation
+        means the algorithm kept a provably sub-optimal edge — the greedy
+        exclusion criterion at the heart of Kruskal's algorithm is broken.
+    """
+    T = nx.minimum_spanning_tree(G)
+
+    # nx.cycle_basis returns a minimal set of cycles that span all cycles
+    cycles = nx.cycle_basis(G)
+
+    if not cycles:
+        return  # graph is already a tree, no cycles to check
+
+    for cycle_nodes in cycles:
+        # Reconstruct the cycle edges from the node sequence
+        cycle_edges = []
+        for i in range(len(cycle_nodes)):
+            u = cycle_nodes[i]
+            v = cycle_nodes[(i + 1) % len(cycle_nodes)]
+            if G.has_edge(u, v):
+                cycle_edges.append((u, v, G[u][v]['weight']))
+
+        if len(cycle_edges) < 2:
+            continue
+
+        max_weight = max(w for _, _, w in cycle_edges)
+        max_edges = [(u, v) for u, v, w in cycle_edges if w == max_weight]
+
+        # Only assert when the maximum is unique (no tie-breaking ambiguity)
+        if len(max_edges) == 1:
+            u, v = max_edges[0]
+            assert not (T.has_edge(u, v) or T.has_edge(v, u)), (
+                f"Cycle property violated: maximum weight edge ({u},{v}) "
+                f"with weight={max_weight} is in the MST but should not be."
+            )
