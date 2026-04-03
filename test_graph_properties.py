@@ -447,6 +447,99 @@ def test_dijkstra_varied_weights(G):
         )
 
 
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_shortest_path_no_repeated_nodes(G):
+    """
+    Property (Postcondition):
+        The shortest path returned by Dijkstra must be a simple path —
+        no node appears more than once.
+
+    Mathematical Foundation:
+        In a graph with non-negative edge weights, an optimal path can
+        never contain a repeated node. If a path visited node v twice,
+        it would contain a cycle v → ... → v. Removing that cycle gives
+        a shorter or equal path to the same destination (since all weights
+        ≥ 1, the cycle adds strictly positive weight). Therefore the
+        optimal path is always simple.
+
+    Test Strategy:
+        Use the custom strategy to generate varied-weight graphs. Compute
+        the weighted shortest path between the first and last node, then
+        check that the list of nodes has no duplicates by comparing
+        len(path) with len(set(path)).
+
+    Preconditions:
+        Graph must be connected so a path always exists.
+        Edge weights must be non-negative (guaranteed by strategy: min=1).
+
+    Why This Matters:
+        A repeated node in the returned path means Dijkstra traversed a
+        cycle — adding unnecessary positive weight. This would indicate
+        the algorithm is not correctly tracking visited nodes, causing
+        it to loop and return a provably suboptimal result.
+    """
+    nodes = list(G.nodes())
+    source, target = nodes[0], nodes[-1]
+
+    path = nx.shortest_path(G, source, target, weight='weight')
+
+    assert len(path) == len(set(path)), (
+        f"Shortest path contains repeated nodes: {path}. "
+        f"Repeated: {[n for n in path if path.count(n) > 1]}"
+    )
+
+    
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_shortest_path_length_consistency(G):
+    """
+    Property (Postcondition — Consistency):
+        The value returned by nx.shortest_path_length must equal the sum
+        of edge weights along the path returned by nx.shortest_path.
+
+    Mathematical Foundation:
+        nx.shortest_path and nx.shortest_path_length are two separate
+        NetworkX functions — one returns the path (list of nodes), the
+        other returns the distance (total weight). They must be consistent:
+        manually summing the weights of edges along the returned path must
+        give exactly the same number as shortest_path_length. Any discrepancy
+        means the two functions are computing different things internally,
+        which would silently corrupt any application that uses both.
+
+    Test Strategy:
+        Use the custom strategy for varied-weight graphs. Compute both the
+        path and the length between the first and last node. Manually sum
+        edge weights along the path and assert equality with reported length.
+
+    Preconditions:
+        Graph must be connected. Edge weights must be non-negative
+        (guaranteed by strategy: min=1).
+
+    Why This Matters:
+        If this test fails, shortest_path and shortest_path_length are
+        internally inconsistent — one of them is computing a different
+        quantity. Any code that uses the path for routing and the length
+        for cost estimation would silently produce wrong answers.
+    """
+    nodes = list(G.nodes())
+    source, target = nodes[0], nodes[-1]
+
+    reported_length = nx.shortest_path_length(G, source, target, weight='weight')
+    path = nx.shortest_path(G, source, target, weight='weight')
+
+    actual_length = sum(
+        G[path[i]][path[i + 1]]['weight']
+        for i in range(len(path) - 1)
+    )
+
+    assert reported_length == actual_length, (
+        f"Inconsistency: shortest_path_length reports {reported_length} "
+        f"but sum of edge weights along shortest_path is {actual_length}. "
+        f"Path: {path}"
+    )
+
+
 # ================================
 # Minimum Spanning Tree Properties
 # ================================
