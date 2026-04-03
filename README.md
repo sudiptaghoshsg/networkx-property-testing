@@ -1,12 +1,12 @@
 # Property-Based Testing for NetworkX Graph Algorithms
 
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![Tests](https://img.shields.io/badge/tests-17%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-26%20passing-brightgreen)
 ![Hypothesis](https://img.shields.io/badge/hypothesis-property--based-orange)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **Authors:** Sudipta Ghosh, Shambo Samanta  
-**Course:** E0 251o - Data Structures and Graph Analytics (2026)  
+**Course:** Data Structures and Graph Analytics  
 **Institution:** Indian Institute of Science (IISc)
 
 ---
@@ -77,7 +77,7 @@ pytest test_graph_properties.py::test_mst_cut_property -v
 
 ## Properties Covered
 
-### Shortest Path (8 tests)
+### Shortest Path (11 tests)
 
 | Test | Property Type | Description |
 |---|---|---|
@@ -87,10 +87,13 @@ pytest test_graph_properties.py::test_mst_cut_property -v
 | `test_shortest_path_triangle_inequality` | Invariant | `d(u,v) ≤ d(u,w) + d(w,v)` for all node triples |
 | `test_shortest_path_self_distance` | Boundary | Distance from any node to itself is zero |
 | `test_shortest_path_validity` | Postcondition | Every step in the returned path is a real edge in the graph |
+| `test_shortest_path_monotonicity_under_weight_increase` | Metamorphic | Increasing any edge weight cannot decrease shortest path distance |
 | `test_shortest_path_optimal_substructure` | Invariant | Every sub-path of a shortest path is itself a shortest path |
 | `test_dijkstra_varied_weights` | Invariant | Dijkstra finds optimal path with non-uniform positive weights |
+| `test_shortest_path_no_repeated_nodes` | Postcondition | Shortest path is a simple path — no node appears twice |
+| `test_shortest_path_length_consistency` | Postcondition | `shortest_path_length` equals sum of edge weights along `shortest_path` |
 
-### Minimum Spanning Tree (9 tests)
+### Minimum Spanning Tree (15 tests)
 
 | Test | Property Type | Description |
 |---|---|---|
@@ -99,11 +102,16 @@ pytest test_graph_properties.py::test_mst_cut_property -v
 | `test_mst_spans_all_nodes` | Postcondition | MST contains every node from the original graph |
 | `test_mst_edge_removal_disconnects` | Metamorphic | Removing any MST edge disconnects it |
 | `test_mst_idempotence` | Idempotence | MST(MST(G)) == MST(G) |
-| `test_mst_cut_property` | Invariant | Minimum weight cut edge must belong to the MST (theoretical foundation of Prim/Kruskal) |
+| `test_mst_cut_property` | Invariant | Minimum weight cut edge must belong to the MST (foundation of Prim/Kruskal) |
+| `test_mst_on_disconnected_graph_returns_forest` | Boundary | MST of disconnected graph returns a valid spanning forest |
 | `test_mst_subgraph_property` | Postcondition | All MST edges exist in the original graph |
 | `test_mst_minimal_edges_property` | Invariant | Adding any non-tree edge to MST creates a cycle |
 | `test_mst_invariant_under_relabeling` | Metamorphic | Node relabeling does not change MST weight or structure |
-
+| `test_mst_weight_scaling` | Metamorphic | Scaling all weights by a constant does not change the MST |
+| `test_mst_total_weight_minimality` | Invariant | MST weight ≤ every other spanning tree (direct definition check) |
+| `test_mst_cycle_property` | Invariant | Maximum weight edge in any cycle must NOT be in the MST |
+| `test_mst_uniqueness_under_distinct_weights` | Invariant | With distinct weights, Kruskal and Prim return identical edge sets |
+| `test_mst_cut_and_cycle_duality` | Invariant | Every non-tree edge is heavier than every MST edge it could replace |
 
 
 ---
@@ -112,9 +120,13 @@ pytest test_graph_properties.py::test_mst_cut_property -v
 
 ```
 networkx-property-testing/
-├── test_graph_properties.py   # All 17 property-based tests
+├── test_graph_properties.py   # All 26 property-based tests
 ├── requirements.txt           # Python dependencies
-├── README.md                  # This file
+├── README.md                  # Project documentation
+├── docs/                      # Demo & execution artifacts
+│   ├── demo.gif               # Short test execution demo
+│   ├── output.jpg             # Screenshot of test results
+│   └── test_run.log           # Full pytest output with statistics
 
 ```
 
@@ -122,9 +134,21 @@ networkx-property-testing/
 
 ## Key Design Decisions
 
-**Custom Hypothesis strategy:** The `connected_weighted_graphs()` composite strategy generates connected graphs with Hypothesis-controlled topology and edge weights. This allows Hypothesis to shrink failing inputs automatically, producing minimal counterexamples and improving debuggability.
+**Custom Hypothesis Strategy:** A custom composite strategy `connected_weighted_graphs()` is used to generate connected graphs with controlled topology and edge weights. By relying entirely on Hypothesis (instead of Python’s `random` module), failing examples can be automatically minimized (“shrunk”), making debugging significantly easier.
 
-**Varied edge weights:** Tests such as `test_dijkstra_varied_weights` and `test_mst_cut_property` use non-uniform weights (1–20) to exercise the full behavior of Dijkstra’s algorithm and MST algorithms (Kruskal/Prim), rather than limiting evaluation to unit-weight (BFS-equivalent) scenarios.
+**Deterministic Weight Generation:** All edge weights are generated using deterministic patterns instead of random sampling. This ensures reproducibility, better shrinking behavior, and eliminates flaky test outcomes.
+
+**Increased Test Coverage:** Most tests use `@settings(max_examples=200)` to explore a larger input space than the default, increasing the likelihood of discovering subtle edge cases.
+
+**Property-Based Testing Approach:** Tests verify - invariants (e.g., symmetry, minimality), metamorphic relations (e.g., edge addition effects), structural guarantees (e.g., MST properties)  
+
+This provides stronger correctness guarantees than example-based testing.
+
+**MST Theoretical Foundations:** Tests such as `test_mst_cycle_property`, `test_mst_cut_property`, and `test_mst_cut_and_cycle_duality` collectively validate the fundamental cut and cycle properties of MSTs — forming a near-complete theoretical characterization of minimum spanning trees.
+
+These properties are rooted in classical results (e.g., Tarjan, 1983, *Data Structures and Network Algorithms*), ensuring the test suite is grounded in formal graph theory.
+
+**Test Independence:** Each test operates on a fresh graph instance, avoiding shared state and ensuring reliable execution.
 
 
 -----
@@ -140,25 +164,34 @@ Results (Python 3.13, Hypothesis 6.151.9):
 
 | Test | Examples Run | Failures | Stopped Because |
 |---|---|---|---|
-| `test_shortest_path_minimality` | 100 | 0 | max_examples=100 |
-| `test_shortest_path_symmetry` | 100 | 0 | max_examples=100 |
-| `test_shortest_path_edge_addition` | 100 | 0 | max_examples=100 |
-| `test_shortest_path_triangle_inequality` | 100 | 0 | max_examples=100 |
-| `test_shortest_path_self_distance` | 100 | 0 | max_examples=100 |
-| `test_shortest_path_validity` | 100 | 0 | max_examples=100 |
-| `test_shortest_path_optimal_substructure` | 100 | 0 | max_examples=100 |
-| `test_dijkstra_varied_weights` | 100 | 0 | max_examples=100 |
-| `test_mst_edge_count` | 100 | 0 | max_examples=100 |
-| `test_mst_is_tree` | 100 | 0 | max_examples=100 |
-| `test_mst_spans_all_nodes` | 100 | 0 | max_examples=100 |
-| `test_mst_edge_removal_disconnects` | 100 | 0 | max_examples=100 |
-| `test_mst_idempotence` | 100 | 0 | max_examples=100 |
-| `test_mst_cut_property` | 100 | 0 | max_examples=100 |
-| `test_mst_subgraph_property` | 100 | 0 | max_examples=100 |
-| `test_mst_minimal_edges_property` | 100 | 0 | max_examples=100 |
-| `test_mst_invariant_under_relabeling` | 100 | 0 | max_examples=100 |
+| `test_shortest_path_minimality` | 200 | 0 | max_examples=200 |
+| `test_shortest_path_symmetry` | 200 | 0 | max_examples=200 |
+| `test_shortest_path_edge_addition` | 200 | 0 | max_examples=200 |
+| `test_shortest_path_triangle_inequality` | 200 | 0 | max_examples=200 |
+| `test_shortest_path_self_distance` | 200 | 0 | max_examples=200 |
+| `test_shortest_path_validity` | 200 | 0 | max_examples=200 |
+| `test_shortest_path_monotonicity_under_weight_increase` | 200 | 0 | max_examples=200 |
+| `test_shortest_path_optimal_substructure` | 200 | 0 | max_examples=200 |
+| `test_dijkstra_varied_weights` | 200 | 0 | max_examples=200 |
+| `test_shortest_path_no_repeated_nodes` | 200 | 0 | max_examples=200 |
+| `test_shortest_path_length_consistency` | 200 | 0 | max_examples=200 |
+| `test_mst_edge_count` | 200 | 0 | max_examples=200 |
+| `test_mst_is_tree` | 200 | 0 | max_examples=200 |
+| `test_mst_spans_all_nodes` | 200 | 0 | max_examples=200 |
+| `test_mst_edge_removal_disconnects` | 200 | 0 | max_examples=200 |
+| `test_mst_idempotence` | 200 | 0 | max_examples=200 |
+| `test_mst_cut_property` | 200 | 0 | max_examples=200 |
+| `test_mst_on_disconnected_graph_returns_forest` | 200 | 0 | max_examples=200 |
+| `test_mst_subgraph_property` | 200 | 0 | max_examples=200 |
+| `test_mst_minimal_edges_property` | 200 | 0 | max_examples=200 |
+| `test_mst_invariant_under_relabeling` | 200 | 0 | max_examples=200 |
+| `test_mst_weight_scaling` | 200 | 0 | max_examples=200 |
+| `test_mst_total_weight_minimality` | 200 | 0 | max_examples=200 |
+| `test_mst_cycle_property` | 200 | 0 | max_examples=200 |
+| `test_mst_uniqueness_under_distinct_weights` | 200 | 0 | max_examples=200 |
+| `test_mst_cut_and_cycle_duality` | 200 | 0 | max_examples=200 |
 
-**Total: 1,700 automatically generated graph examples tested across 17 tests. 0 failures.**
+**Total: ~5,200 automatically generated graph examples tested across 26 tests. 0 failures.**
 
 
 - [Hypothesis documentation](https://hypothesis.readthedocs.io/)
