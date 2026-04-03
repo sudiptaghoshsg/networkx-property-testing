@@ -395,6 +395,49 @@ def test_dijkstra_varied_weights(G):
         )
 
 
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_shortest_path_no_repeated_nodes(G):
+    """
+    Property (Postcondition):
+        The shortest path returned by Dijkstra must be a simple path —
+        no node appears more than once.
+
+    Mathematical Foundation:
+        In a graph with non-negative edge weights, an optimal path can
+        never contain a repeated node. If a path visited node v twice,
+        it would contain a cycle v → ... → v. Removing that cycle gives
+        a shorter or equal path to the same destination (since all weights
+        ≥ 1, the cycle adds strictly positive weight). Therefore the
+        optimal path is always simple.
+
+    Test Strategy:
+        Use the custom strategy to generate varied-weight graphs. Compute
+        the weighted shortest path between the first and last node, then
+        check that the list of nodes has no duplicates by comparing
+        len(path) with len(set(path)).
+
+    Preconditions:
+        Graph must be connected so a path always exists.
+        Edge weights must be non-negative (guaranteed by strategy: min=1).
+
+    Why This Matters:
+        A repeated node in the returned path means Dijkstra traversed a
+        cycle — adding unnecessary positive weight. This would indicate
+        the algorithm is not correctly tracking visited nodes, causing
+        it to loop and return a provably suboptimal result.
+    """
+    nodes = list(G.nodes())
+    source, target = nodes[0], nodes[-1]
+
+    path = nx.shortest_path(G, source, target, weight='weight')
+
+    assert len(path) == len(set(path)), (
+        f"Shortest path contains repeated nodes: {path}. "
+        f"Repeated: {[n for n in path if path.count(n) > 1]}"
+    )
+
+    
 # ================================
 # Minimum Spanning Tree Properties
 # ================================
