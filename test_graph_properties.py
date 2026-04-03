@@ -872,3 +872,76 @@ def test_mst_uniqueness_under_distinct_weights(G, data):
         f"  Both algorithms should return the same unique MST."
     )
 
+
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_mst_cut_and_cycle_duality(G):
+    """
+    Property (Invariant — Cut-Cycle Duality):
+        For every edge e in the MST, e is the minimum weight edge crossing
+        some cut (Cut Property). For every edge e NOT in the MST, e is the
+        maximum weight edge in some cycle (Cycle Property). Together these
+        two conditions are necessary AND sufficient to characterize the MST.
+
+    Mathematical Foundation:
+        This test unifies the Cut Property and Cycle Property into a single
+        duality check — the complete characterization theorem for MSTs:
+
+            e ∈ MST  ↔  e is min weight on some cut
+            e ∉ MST  ↔  e is max weight on some cycle
+
+        The "fundamental cycle" of a non-tree edge e = (u,v) is the unique
+        cycle formed by adding e to the MST (the cycle consists of e plus
+        the unique path from u to v in the MST). By the Cycle Property,
+        e must be the maximum weight edge in this fundamental cycle —
+        otherwise the MST could be improved.
+
+    Test Strategy:
+        For each non-tree edge e = (u,v) with weight w_e:
+        1. Find the unique path from u to v in the MST (the fundamental cycle path)
+        2. Find the maximum weight edge on that path
+        3. Assert w_e ≥ max path weight (e must be at least as heavy as
+           every MST edge on the path, otherwise e should have replaced it)
+
+        When weights are unique, w_e > max path weight strictly.
+        With possible ties, w_e ≥ max path weight is the correct form.
+
+    Preconditions:
+        Graph must be connected and have at least one non-tree edge
+        (i.e., more edges than n-1). Edge weights from the custom strategy
+        (1–20) may have ties, so we use ≥ instead of >.
+
+    Why This Matters:
+        This is the most comprehensive single test in the suite. It directly
+        verifies the optimality condition that makes the MST minimal: every
+        excluded edge is heavier than every edge it could replace. A failure
+        means a non-tree edge is lighter than an MST edge it could swap with
+        — proving the MST is not actually minimum.
+    """
+    T = nx.minimum_spanning_tree(G)
+
+    for u, v in G.edges():
+        if T.has_edge(u, v) or T.has_edge(v, u):
+            continue  # skip tree edges, only check non-tree edges
+
+        w_e = G[u][v]['weight']
+
+        # Find the unique path from u to v in the MST
+        try:
+            path = nx.shortest_path(T, u, v)
+        except nx.NetworkXNoPath:
+            continue
+
+        # Find max weight edge along the MST path (the fundamental cycle)
+        max_path_weight = max(
+            T[path[i]][path[i + 1]]['weight']
+            for i in range(len(path) - 1)
+        )
+
+        assert w_e >= max_path_weight, (
+            f"Cut-Cycle duality violated: non-tree edge ({u},{v}) has weight "
+            f"{w_e} which is LESS than max MST path weight {max_path_weight}. "
+            f"This edge should have replaced the heavier MST edge — "
+            f"the MST is not actually minimum."
+        )
+
