@@ -981,6 +981,129 @@ def test_mst_weight_scaling(G):
         "MST edge set changed after uniform weight scaling."
     )
 
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_mst_total_weight_minimality(G):
+    """
+    Property (Invariant — Global Optimality):
+        The total weight of the MST must be less than or equal to the
+        total weight of every other spanning tree of the graph.
+
+    Mathematical Foundation:
+        This is the direct definition of a minimum spanning tree —
+        it is the spanning tree with the lowest possible total edge weight.
+        All other spanning trees must have weight ≥ MST weight.
+        This test verifies global optimality by exhaustive comparison:
+        enumerate every spanning tree of G and assert none is cheaper.
+
+        A spanning tree of G is any connected acyclic subgraph that includes
+        all vertices. NetworkX's nx.SpanningTreeIterator enumerates all of
+        them in order of increasing weight.
+
+    Test Strategy:
+        Use the custom strategy for small varied-weight graphs (≤ 7 nodes
+        to keep enumeration tractable). Compute the MST weight, then use
+        nx.SpanningTreeIterator to enumerate ALL spanning trees and verify
+        none has a lower total weight than the MST.
+
+    Preconditions:
+        Graph must be connected. Kept small (n ≤ 7) because the number of
+        spanning trees grows exponentially — Cayley's formula gives n^(n-2)
+        for complete graphs, so n=7 gives at most 7^5 = 16,807 trees.
+
+    Why This Matters:
+        This is the most direct possible correctness check — it literally
+        verifies the definition of "minimum" by comparing against every
+        alternative. All other MST tests verify structural properties
+        (tree shape, edge count, cut/cycle conditions). This test directly
+        verifies the weight optimality guarantee.
+    """
+    # Keep small for tractability — limit to graphs with ≤ 7 nodes
+    if G.number_of_nodes() > 7:
+        return
+
+    T = nx.minimum_spanning_tree(G)
+    mst_weight = sum(d['weight'] for _, _, d in T.edges(data=True))
+
+    for spanning_tree in nx.SpanningTreeIterator(G):
+        tree_weight = sum(d['weight'] for _, _, d in spanning_tree.edges(data=True))
+        assert mst_weight <= tree_weight, (
+            f"MST weight {mst_weight} is greater than another spanning tree "
+            f"with weight {tree_weight} — MST is not globally minimum."
+        )
+
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_mst_cycle_property(G):
+    """
+    Property (Invariant — Cycle Property):
+        For any cycle in the graph, the maximum weight edge in that cycle
+        must NOT be in the MST (when all edge weights are distinct).
+
+    Mathematical Foundation:
+        The Cycle Property is the exact dual of the Cut Property, and
+        together they completely characterize minimum spanning trees:
+
+            Cut Property:   min weight cut edge  → MUST be in MST
+            Cycle Property: max weight cycle edge → MUST NOT be in MST
+
+        Proof by contradiction: suppose the maximum weight edge e = (u,v)
+        in some cycle C IS in the MST T. Removing e splits T into two
+        components. Since C is a cycle, there must be another path in C
+        from u to v not using e. That path contains at least one edge e'
+        crossing the same cut, and since e is the MAX weight edge in C,
+        w(e') ≤ w(e). Replacing e with e' gives a spanning tree of equal
+        or lesser weight — contradicting e being in the unique MST when
+        all weights are distinct.
+
+    Test Strategy:
+        Use the custom strategy to generate varied-weight graphs. For each
+        cycle found via nx.cycle_basis (which returns a set of fundamental
+        cycles), find the maximum weight edge in that cycle and verify it
+        is NOT in the MST. Only run this check when all edge weights in
+        the cycle are distinct (to avoid tie-breaking ambiguity).
+
+    Preconditions:
+        Graph must be connected and have at least one cycle (i.e., more
+        edges than n-1). Cycle Property applies cleanly only when the
+        maximum weight edge in the cycle is unique (no ties).
+
+    Why This Matters:
+        Together with the Cut Property (already tested), the Cycle Property
+        forms the complete mathematical characterization of MSTs. A violation
+        means the algorithm kept a provably sub-optimal edge — the greedy
+        exclusion criterion at the heart of Kruskal's algorithm is broken.
+    """
+    T = nx.minimum_spanning_tree(G)
+
+    # nx.cycle_basis returns a minimal set of cycles that span all cycles
+    cycles = nx.cycle_basis(G)
+
+    if not cycles:
+        return  # graph is already a tree, no cycles to check
+
+    for cycle_nodes in cycles:
+        # Reconstruct the cycle edges from the node sequence
+        cycle_edges = []
+        for i in range(len(cycle_nodes)):
+            u = cycle_nodes[i]
+            v = cycle_nodes[(i + 1) % len(cycle_nodes)]
+            if G.has_edge(u, v):
+                cycle_edges.append((u, v, G[u][v]['weight']))
+
+        if len(cycle_edges) < 2:
+            continue
+
+        max_weight = max(w for _, _, w in cycle_edges)
+        max_edges = [(u, v) for u, v, w in cycle_edges if w == max_weight]
+
+        # Only assert when the maximum is unique (no tie-breaking ambiguity)
+        if len(max_edges) == 1:
+            u, v = max_edges[0]
+            assert not (T.has_edge(u, v) or T.has_edge(v, u)), (
+                f"Cycle property violated: maximum weight edge ({u},{v}) "
+                f"with weight={max_weight} is in the MST but should not be."
+            )
 
 @settings(max_examples=100)
 @given(connected_weighted_graphs(), st.data())
@@ -1115,128 +1238,4 @@ def test_mst_cut_and_cycle_duality(G):
             f"{w_e} which is LESS than max MST path weight {max_path_weight}. "
             f"This edge should have replaced the heavier MST edge — "
             f"the MST is not actually minimum."
-        )
-
-@settings(max_examples=100)
-@given(connected_weighted_graphs())
-def test_mst_cycle_property(G):
-    """
-    Property (Invariant — Cycle Property):
-        For any cycle in the graph, the maximum weight edge in that cycle
-        must NOT be in the MST (when all edge weights are distinct).
-
-    Mathematical Foundation:
-        The Cycle Property is the exact dual of the Cut Property, and
-        together they completely characterize minimum spanning trees:
-
-            Cut Property:   min weight cut edge  → MUST be in MST
-            Cycle Property: max weight cycle edge → MUST NOT be in MST
-
-        Proof by contradiction: suppose the maximum weight edge e = (u,v)
-        in some cycle C IS in the MST T. Removing e splits T into two
-        components. Since C is a cycle, there must be another path in C
-        from u to v not using e. That path contains at least one edge e'
-        crossing the same cut, and since e is the MAX weight edge in C,
-        w(e') ≤ w(e). Replacing e with e' gives a spanning tree of equal
-        or lesser weight — contradicting e being in the unique MST when
-        all weights are distinct.
-
-    Test Strategy:
-        Use the custom strategy to generate varied-weight graphs. For each
-        cycle found via nx.cycle_basis (which returns a set of fundamental
-        cycles), find the maximum weight edge in that cycle and verify it
-        is NOT in the MST. Only run this check when all edge weights in
-        the cycle are distinct (to avoid tie-breaking ambiguity).
-
-    Preconditions:
-        Graph must be connected and have at least one cycle (i.e., more
-        edges than n-1). Cycle Property applies cleanly only when the
-        maximum weight edge in the cycle is unique (no ties).
-
-    Why This Matters:
-        Together with the Cut Property (already tested), the Cycle Property
-        forms the complete mathematical characterization of MSTs. A violation
-        means the algorithm kept a provably sub-optimal edge — the greedy
-        exclusion criterion at the heart of Kruskal's algorithm is broken.
-    """
-    T = nx.minimum_spanning_tree(G)
-
-    # nx.cycle_basis returns a minimal set of cycles that span all cycles
-    cycles = nx.cycle_basis(G)
-
-    if not cycles:
-        return  # graph is already a tree, no cycles to check
-
-    for cycle_nodes in cycles:
-        # Reconstruct the cycle edges from the node sequence
-        cycle_edges = []
-        for i in range(len(cycle_nodes)):
-            u = cycle_nodes[i]
-            v = cycle_nodes[(i + 1) % len(cycle_nodes)]
-            if G.has_edge(u, v):
-                cycle_edges.append((u, v, G[u][v]['weight']))
-
-        if len(cycle_edges) < 2:
-            continue
-
-        max_weight = max(w for _, _, w in cycle_edges)
-        max_edges = [(u, v) for u, v, w in cycle_edges if w == max_weight]
-
-        # Only assert when the maximum is unique (no tie-breaking ambiguity)
-        if len(max_edges) == 1:
-            u, v = max_edges[0]
-            assert not (T.has_edge(u, v) or T.has_edge(v, u)), (
-                f"Cycle property violated: maximum weight edge ({u},{v}) "
-                f"with weight={max_weight} is in the MST but should not be."
-            )
-
-@settings(max_examples=100)
-@given(connected_weighted_graphs())
-def test_mst_total_weight_minimality(G):
-    """
-    Property (Invariant — Global Optimality):
-        The total weight of the MST must be less than or equal to the
-        total weight of every other spanning tree of the graph.
-
-    Mathematical Foundation:
-        This is the direct definition of a minimum spanning tree —
-        it is the spanning tree with the lowest possible total edge weight.
-        All other spanning trees must have weight ≥ MST weight.
-        This test verifies global optimality by exhaustive comparison:
-        enumerate every spanning tree of G and assert none is cheaper.
-
-        A spanning tree of G is any connected acyclic subgraph that includes
-        all vertices. NetworkX's nx.SpanningTreeIterator enumerates all of
-        them in order of increasing weight.
-
-    Test Strategy:
-        Use the custom strategy for small varied-weight graphs (≤ 7 nodes
-        to keep enumeration tractable). Compute the MST weight, then use
-        nx.SpanningTreeIterator to enumerate ALL spanning trees and verify
-        none has a lower total weight than the MST.
-
-    Preconditions:
-        Graph must be connected. Kept small (n ≤ 7) because the number of
-        spanning trees grows exponentially — Cayley's formula gives n^(n-2)
-        for complete graphs, so n=7 gives at most 7^5 = 16,807 trees.
-
-    Why This Matters:
-        This is the most direct possible correctness check — it literally
-        verifies the definition of "minimum" by comparing against every
-        alternative. All other MST tests verify structural properties
-        (tree shape, edge count, cut/cycle conditions). This test directly
-        verifies the weight optimality guarantee.
-    """
-    # Keep small for tractability — limit to graphs with ≤ 7 nodes
-    if G.number_of_nodes() > 7:
-        return
-
-    T = nx.minimum_spanning_tree(G)
-    mst_weight = sum(d['weight'] for _, _, d in T.edges(data=True))
-
-    for spanning_tree in nx.SpanningTreeIterator(G):
-        tree_weight = sum(d['weight'] for _, _, d in spanning_tree.edges(data=True))
-        assert mst_weight <= tree_weight, (
-            f"MST weight {mst_weight} is greater than another spanning tree "
-            f"with weight {tree_weight} — MST is not globally minimum."
         )
