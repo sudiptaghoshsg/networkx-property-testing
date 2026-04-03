@@ -768,3 +768,44 @@ def test_mst_invariant_under_relabeling(G):
         f"MST total weight changed under relabeling: {w1} vs {w2}."
     )
 
+
+@settings(max_examples=100)
+@given(connected_weighted_graphs())
+def test_mst_weight_scaling(G):
+    """
+    Property (Metamorphic):
+        Multiplying all edge weights by a positive constant does not change
+        the set of edges selected for the MST.
+
+    Mathematical Foundation:
+        Kruskal's and Prim's algorithms select edges based on their relative
+        ordering by weight. Scaling all weights by a constant factor k > 0
+        preserves the total order of edge weights (w_i < w_j iff k*w_i < k*w_j).
+        Therefore, the same edges are selected in the same order, producing an
+        identical MST.
+
+    Test Strategy:
+        Use the custom strategy for 100 varied-weight graphs. Compute T1 = MST(G),
+        then multiply all weights by 5 and compute T2 = MST(G). Assert identical
+        edge sets.
+
+    Preconditions:
+        All edge weights must be positive (guaranteed by strategy: min=1).
+
+    Why This Matters:
+        If the MST changes after uniform weight scaling, the algorithm uses
+        absolute weight values rather than relative ordering — indicating it is
+        not correctly implementing the greedy selection criterion.
+    """
+    G2 = G.copy()
+    T1 = nx.minimum_spanning_tree(G2)
+
+    for u, v in G2.edges():
+        G2[u][v]['weight'] *= 5
+
+    T2 = nx.minimum_spanning_tree(G2)
+
+    assert set(T1.edges()) == set(T2.edges()), (
+        "MST edge set changed after uniform weight scaling."
+    )
+
