@@ -73,7 +73,7 @@ def connected_weighted_graphs(draw):
 # ================================
 # Shortest Path Properties
 # ================================
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_shortest_path_minimality(G):
     """
@@ -89,7 +89,7 @@ def test_shortest_path_minimality(G):
     Test Strategy:
         Use the custom connected_weighted_graphs() strategy to generate graphs
         with varied weights (1–20), giving Hypothesis a large search space to
-        explore 100 genuinely distinct examples. Pick the first and last node
+        explore 200 genuinely distinct examples. Pick the first and last node
         as source and target, compute the weighted shortest path length, then
         enumerate ALL simple paths and verify none has lower total weight.
 
@@ -114,7 +114,7 @@ def test_shortest_path_minimality(G):
         )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_shortest_path_symmetry(G):
     """
@@ -150,7 +150,7 @@ def test_shortest_path_symmetry(G):
     )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_shortest_path_edge_addition(G):
     """
@@ -188,7 +188,7 @@ def test_shortest_path_edge_addition(G):
     )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_shortest_path_triangle_inequality(G):
     """
@@ -229,7 +229,7 @@ def test_shortest_path_triangle_inequality(G):
     )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_shortest_path_self_distance(G):
     """
@@ -259,7 +259,7 @@ def test_shortest_path_self_distance(G):
     )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_shortest_path_validity(G):
     """
@@ -297,7 +297,7 @@ def test_shortest_path_validity(G):
             f"Path contains step ({u}→{v}) which is not an edge in the graph."
         )
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs(), st.data())
 def test_shortest_path_monotonicity_under_weight_increase(G, data):
     """
@@ -350,7 +350,7 @@ def test_shortest_path_monotonicity_under_weight_increase(G, data):
     )
         
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_shortest_path_optimal_substructure(G):
     """
@@ -408,7 +408,7 @@ def test_shortest_path_optimal_substructure(G):
         )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_dijkstra_varied_weights(G):
     """
@@ -454,7 +454,7 @@ def test_dijkstra_varied_weights(G):
         )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_shortest_path_no_repeated_nodes(G):
     """
@@ -497,7 +497,7 @@ def test_shortest_path_no_repeated_nodes(G):
     )
 
     
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_shortest_path_length_consistency(G):
     """
@@ -551,7 +551,7 @@ def test_shortest_path_length_consistency(G):
 # Minimum Spanning Tree Properties
 # ================================
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_edge_count(G):
     """
@@ -566,7 +566,7 @@ def test_mst_edge_count(G):
 
     Test Strategy:
         Use the custom strategy to generate varied-weight connected graphs.
-        Compute the MST and verify it has exactly n-1 edges across 100
+        Compute the MST and verify it has exactly n-1 edges across 200
         distinct graph structures.
 
     Preconditions:
@@ -584,7 +584,7 @@ def test_mst_edge_count(G):
     )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_is_tree(G):
     """
@@ -599,7 +599,7 @@ def test_mst_is_tree(G):
         NetworkX's nx.is_tree checks both conditions simultaneously.
 
     Test Strategy:
-        Use the custom strategy for 100 varied-weight graphs. Compute the MST
+        Use the custom strategy for 200 varied-weight graphs. Compute the MST
         and pass it to nx.is_tree, which returns True iff connected and acyclic.
 
     Preconditions:
@@ -617,7 +617,7 @@ def test_mst_is_tree(G):
     )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_spans_all_nodes(G):
     """
@@ -630,7 +630,7 @@ def test_mst_spans_all_nodes(G):
         vertex is not a spanning tree.
 
     Test Strategy:
-        Use the custom strategy for 100 varied-weight graphs. Compare the
+        Use the custom strategy for 200 varied-weight graphs. Compare the
         node set of the MST with the node set of the original graph.
 
     Preconditions:
@@ -647,7 +647,7 @@ def test_mst_spans_all_nodes(G):
     )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_edge_removal_disconnects(G):
     """
@@ -661,7 +661,7 @@ def test_mst_edge_removal_disconnects(G):
         consequence of having n-1 edges for n vertices with no cycles.
 
     Test Strategy:
-        Use the custom strategy for 100 varied-weight graphs. Compute the MST,
+        Use the custom strategy for 200 varied-weight graphs. Compute the MST,
         remove its first edge, and assert the resulting graph is disconnected.
 
     Preconditions:
@@ -682,7 +682,7 @@ def test_mst_edge_removal_disconnects(G):
     )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_idempotence(G):
     """
@@ -696,7 +696,7 @@ def test_mst_idempotence(G):
         must return it unchanged.
 
     Test Strategy:
-        Use the custom strategy for 100 varied-weight graphs. Compute
+        Use the custom strategy for 200 varied-weight graphs. Compute
         T1 = MST(G), then T2 = MST(T1), and assert identical edge sets.
 
     Preconditions:
@@ -713,7 +713,7 @@ def test_mst_idempotence(G):
         "MST is not idempotent: MST(MST(G)) ≠ MST(G)."
     )
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_cut_property(G):
     """
@@ -776,7 +776,7 @@ def test_mst_cut_property(G):
         f"(weight={min_weight}) is in the MST."
     )   
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs(), connected_weighted_graphs())
 def test_mst_on_disconnected_graph_returns_forest(G1, G2):
     """
@@ -828,6 +828,8 @@ def test_mst_on_disconnected_graph_returns_forest(G1, G2):
     assert len(components) == 2, (
         f"Spanning forest should have 2 components, got {len(components)}."
     )
+
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_subgraph_property(G):
     """
@@ -840,7 +842,7 @@ def test_mst_subgraph_property(G):
         select a subset of G's edges.
 
     Test Strategy:
-        Use the custom strategy for 100 varied-weight graphs. Iterate over
+        Use the custom strategy for 200 varied-weight graphs. Iterate over
         all MST edges and assert each exists in G.
 
     Preconditions:
@@ -859,7 +861,7 @@ def test_mst_subgraph_property(G):
         )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_minimal_edges_property(G):
     """
@@ -873,7 +875,7 @@ def test_mst_minimal_edges_property(G):
         cycle property of trees.
 
     Test Strategy:
-        Use the custom strategy for 100 varied-weight graphs. Find an edge in G
+        Use the custom strategy for 200 varied-weight graphs. Find an edge in G
         not in the MST, add it to a copy of the MST, and verify the result is
         no longer a valid tree.
 
@@ -897,7 +899,7 @@ def test_mst_minimal_edges_property(G):
             break
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_invariant_under_relabeling(G):
     """
@@ -912,7 +914,7 @@ def test_mst_invariant_under_relabeling(G):
         is determined entirely by edge weights and connectivity.
 
     Test Strategy:
-        Use the custom strategy for 100 varied-weight graphs. Compute MST of G,
+        Use the custom strategy for 200 varied-weight graphs. Compute MST of G,
         relabel all nodes by adding 100, compute MST of relabeled graph, and
         compare edge counts and total weights.
 
@@ -941,7 +943,7 @@ def test_mst_invariant_under_relabeling(G):
     )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_weight_scaling(G):
     """
@@ -957,7 +959,7 @@ def test_mst_weight_scaling(G):
         identical MST.
 
     Test Strategy:
-        Use the custom strategy for 100 varied-weight graphs. Compute T1 = MST(G),
+        Use the custom strategy for 200 varied-weight graphs. Compute T1 = MST(G),
         then multiply all weights by 5 and compute T2 = MST(G). Assert identical
         edge sets.
 
@@ -981,7 +983,7 @@ def test_mst_weight_scaling(G):
         "MST edge set changed after uniform weight scaling."
     )
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_total_weight_minimality(G):
     """
@@ -1032,7 +1034,7 @@ def test_mst_total_weight_minimality(G):
             f"with weight {tree_weight} — MST is not globally minimum."
         )
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_cycle_property(G):
     """
@@ -1105,7 +1107,7 @@ def test_mst_cycle_property(G):
                 f"with weight={max_weight} is in the MST but should not be."
             )
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs(), st.data())
 def test_mst_uniqueness_under_distinct_weights(G, data):
     """
@@ -1168,7 +1170,7 @@ def test_mst_uniqueness_under_distinct_weights(G, data):
     )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_cut_and_cycle_duality(G):
     """
