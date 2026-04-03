@@ -809,3 +809,66 @@ def test_mst_weight_scaling(G):
         "MST edge set changed after uniform weight scaling."
     )
 
+
+@settings(max_examples=100)
+@given(connected_weighted_graphs(), st.data())
+def test_mst_uniqueness_under_distinct_weights(G, data):
+    """
+    Property (Invariant — MST Uniqueness):
+        When all edge weights in a graph are distinct, the MST is unique —
+        Kruskal's algorithm and Prim's algorithm must return identical edge sets.
+
+    Mathematical Foundation:
+        Theorem: If all edge weights are distinct, the MST is unique.
+        Proof sketch: Suppose two different MSTs T1 and T2 exist. Let e be
+        the minimum weight edge in T1 that is not in T2. Adding e to T2
+        creates a cycle. That cycle must contain an edge e' not in T1
+        (otherwise T1 would have a cycle). Since e is chosen as the minimum
+        weight edge in T1 \\ T2, and e' is in T2 \\ T1, we must have
+        w(e) < w(e') (by distinctness). Replacing e' with e in T2 gives a
+        spanning tree of strictly lesser weight — contradicting T2 being
+        an MST. Therefore T1 = T2.
+
+        This means with distinct weights, ANY correct MST algorithm must
+        return the same edge set, regardless of implementation details
+        like tie-breaking or traversal order.
+
+    Test Strategy:
+        Use the custom strategy to generate graphs. Draw a random permutation
+        of 1..m (where m = number of edges) via st.permutations() to assign
+        strictly unique weights — fully controlled by Hypothesis so failing
+        examples can be reliably shrunk and replayed. Compute MST using both
+        Kruskal ('kruskal') and Prim ('prim') and assert identical edge sets.
+
+    Preconditions:
+        All edge weights must be strictly distinct (enforced by permutation).
+        Graph must be connected.
+
+    Why This Matters:
+        If Kruskal and Prim return different edge sets under distinct weights,
+        at least one implementation is wrong — both should converge to the
+        same unique MST. This is the strongest possible correctness check:
+        two independent algorithms must agree on every single edge.
+    """
+    edges = list(G.edges())
+    m = len(edges)
+
+    # Draw a permutation via Hypothesis — fully reproducible, shrinkable
+    unique_weights = data.draw(st.permutations(range(1, m + 1)))
+
+    for (u, v), w in zip(edges, unique_weights):
+        G[u][v]['weight'] = w
+
+    T_kruskal = nx.minimum_spanning_tree(G, algorithm='kruskal')
+    T_prim    = nx.minimum_spanning_tree(G, algorithm='prim')
+
+    edges_kruskal = set(tuple(sorted(e)) for e in T_kruskal.edges())
+    edges_prim    = set(tuple(sorted(e)) for e in T_prim.edges())
+
+    assert edges_kruskal == edges_prim, (
+        f"MST uniqueness violated under distinct weights:\n"
+        f"  Kruskal edges: {edges_kruskal}\n"
+        f"  Prim edges:    {edges_prim}\n"
+        f"  Both algorithms should return the same unique MST."
+    )
+
