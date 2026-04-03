@@ -290,6 +290,58 @@ def test_shortest_path_validity(G):
             f"Path contains step ({u}→{v}) which is not an edge in the graph."
         )
 
+@settings(max_examples=100)
+@given(connected_weighted_graphs(), st.data())
+def test_shortest_path_monotonicity_under_weight_increase(G, data):
+    """
+    Property (Metamorphic — Monotonicity):
+        Increasing the weight of any edge can only increase or maintain
+        the shortest path distance — it can never decrease it.
+
+    Mathematical Foundation:
+        Let d(u,v) be the shortest path distance with original weights.
+        If we increase the weight of edge (a,b) by δ > 0, the new distance
+        d'(u,v) ≥ d(u,v). This follows because:
+        (1) If the shortest path does not use (a,b), d'(u,v) = d(u,v).
+        (2) If the shortest path uses (a,b), its cost increases by δ.
+            Any alternative path already existed and cost ≥ d(u,v) before
+            the increase — so d'(u,v) ≥ d(u,v) in either case.
+
+    Test Strategy:
+        Use the custom strategy for a varied-weight graph. Record the
+        original distance between first and last node. Use st.data() to
+        draw a random edge and a positive increment δ (1–10) via Hypothesis
+        — fully reproducible and shrinkable. Increase that edge's weight
+        by δ and recompute. Assert the new distance is ≥ the original.
+
+    Preconditions:
+        Graph must be connected. Weight increment must be positive (δ ≥ 1).
+
+    Why This Matters:
+        If distance decreases after a weight increase, the algorithm is
+        not correctly recomputing paths after graph modifications — a
+        serious bug that would cause incorrect results in any dynamic
+        shortest-path application.
+    """
+    nodes = list(G.nodes())
+    source, target = nodes[0], nodes[-1]
+
+    d_before = nx.shortest_path_length(G, source, target, weight='weight')
+
+    # Draw a random edge and increment fully via Hypothesis — reproducible
+    edge = data.draw(st.sampled_from(list(G.edges())))
+    delta = data.draw(st.integers(min_value=1, max_value=10))
+
+    u, v = edge
+    G[u][v]['weight'] += delta
+
+    d_after = nx.shortest_path_length(G, source, target, weight='weight')
+
+    assert d_after >= d_before, (
+        f"Monotonicity violated: distance decreased from {d_before} to "
+        f"{d_after} after increasing edge ({u},{v}) weight by {delta}."
+    )
+        
 
 @settings(max_examples=100)
 @given(connected_weighted_graphs())
@@ -625,6 +677,57 @@ def test_mst_cut_property(G):
     )   
 
 @settings(max_examples=100)
+@given(connected_weighted_graphs(), connected_weighted_graphs())
+def test_mst_on_disconnected_graph_returns_forest(G1, G2):
+    """
+    Property (Boundary Condition):
+        Applying nx.minimum_spanning_tree to a disconnected graph returns a
+        spanning forest — one tree per connected component.
+
+    Mathematical Foundation:
+        When a graph is disconnected, no single spanning tree can connect all
+        vertices (by definition, spanning trees require connectivity). Instead,
+        the algorithm produces a spanning forest: a set of trees, one for each
+        connected component. If component i has k_i nodes, its spanning tree
+        has k_i - 1 edges. The total edges in the forest = sum(k_i - 1) =
+        n - (number of components).
+
+    Test Strategy:
+        Use two independent connected_weighted_graphs() draws to create two
+        separate components with varied topologies and weights. Relabel G2 to
+        avoid node ID collisions, compose into a disconnected graph, and verify:
+        (1) total edges = (n1 - 1) + (n2 - 1)
+        (2) the forest has exactly 2 connected components.
+
+    Preconditions:
+        The two sub-graphs must be non-empty and not connected to each other.
+
+    Why This Matters:
+        Many MST implementations assume connected input. Testing on disconnected
+        graphs reveals whether the algorithm gracefully handles the forest case
+        or incorrectly assumes a single spanning tree always exists.
+    """
+    n1 = G1.number_of_nodes()
+    n2 = G2.number_of_nodes()
+
+    # Relabel G2 nodes to avoid overlap with G1
+    offset = max(G1.nodes()) + 100
+    mapping = {node: node + offset for node in G2.nodes()}
+    G2 = nx.relabel_nodes(G2, mapping)
+
+    G = nx.compose(G1, G2)  # disjoint union — no edges between components
+
+    F = nx.minimum_spanning_tree(G)
+
+    expected_edges = (n1 - 1) + (n2 - 1)
+    assert F.number_of_edges() == expected_edges, (
+        f"Spanning forest should have {expected_edges} edges, got {F.number_of_edges()}."
+    )
+
+    components = list(nx.connected_components(F))
+    assert len(components) == 2, (
+        f"Spanning forest should have 2 components, got {len(components)}."
+    )
 @given(connected_weighted_graphs())
 def test_mst_subgraph_property(G):
     """
