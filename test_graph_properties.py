@@ -73,7 +73,7 @@ def connected_weighted_graphs(draw):
 # ================================
 # Shortest Path Properties
 # ================================
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_shortest_path_minimality(G):
     """
@@ -89,7 +89,7 @@ def test_shortest_path_minimality(G):
     Test Strategy:
         Use the custom connected_weighted_graphs() strategy to generate graphs
         with varied weights (1–20), giving Hypothesis a large search space to
-        explore 100 genuinely distinct examples. Pick the first and last node
+        explore 200 genuinely distinct examples. Pick the first and last node
         as source and target, compute the weighted shortest path length, then
         enumerate ALL simple paths and verify none has lower total weight.
 
@@ -114,7 +114,7 @@ def test_shortest_path_minimality(G):
         )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_shortest_path_symmetry(G):
     """
@@ -150,7 +150,7 @@ def test_shortest_path_symmetry(G):
     )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_shortest_path_edge_addition(G):
     """
@@ -188,7 +188,7 @@ def test_shortest_path_edge_addition(G):
     )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_shortest_path_triangle_inequality(G):
     """
@@ -229,7 +229,7 @@ def test_shortest_path_triangle_inequality(G):
     )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_shortest_path_self_distance(G):
     """
@@ -259,7 +259,7 @@ def test_shortest_path_self_distance(G):
     )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_shortest_path_validity(G):
     """
@@ -297,7 +297,7 @@ def test_shortest_path_validity(G):
             f"Path contains step ({u}→{v}) which is not an edge in the graph."
         )
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs(), st.data())
 def test_shortest_path_monotonicity_under_weight_increase(G, data):
     """
@@ -350,7 +350,7 @@ def test_shortest_path_monotonicity_under_weight_increase(G, data):
     )
         
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_shortest_path_optimal_substructure(G):
     """
@@ -408,7 +408,7 @@ def test_shortest_path_optimal_substructure(G):
         )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_dijkstra_varied_weights(G):
     """
@@ -454,7 +454,7 @@ def test_dijkstra_varied_weights(G):
         )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_shortest_path_no_repeated_nodes(G):
     """
@@ -497,7 +497,7 @@ def test_shortest_path_no_repeated_nodes(G):
     )
 
     
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_shortest_path_length_consistency(G):
     """
@@ -551,7 +551,7 @@ def test_shortest_path_length_consistency(G):
 # Minimum Spanning Tree Properties
 # ================================
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_edge_count(G):
     """
@@ -566,7 +566,7 @@ def test_mst_edge_count(G):
 
     Test Strategy:
         Use the custom strategy to generate varied-weight connected graphs.
-        Compute the MST and verify it has exactly n-1 edges across 100
+        Compute the MST and verify it has exactly n-1 edges across 200
         distinct graph structures.
 
     Preconditions:
@@ -584,7 +584,7 @@ def test_mst_edge_count(G):
     )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_is_tree(G):
     """
@@ -599,7 +599,7 @@ def test_mst_is_tree(G):
         NetworkX's nx.is_tree checks both conditions simultaneously.
 
     Test Strategy:
-        Use the custom strategy for 100 varied-weight graphs. Compute the MST
+        Use the custom strategy for 200 varied-weight graphs. Compute the MST
         and pass it to nx.is_tree, which returns True iff connected and acyclic.
 
     Preconditions:
@@ -617,7 +617,7 @@ def test_mst_is_tree(G):
     )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_spans_all_nodes(G):
     """
@@ -630,7 +630,7 @@ def test_mst_spans_all_nodes(G):
         vertex is not a spanning tree.
 
     Test Strategy:
-        Use the custom strategy for 100 varied-weight graphs. Compare the
+        Use the custom strategy for 200 varied-weight graphs. Compare the
         node set of the MST with the node set of the original graph.
 
     Preconditions:
@@ -647,7 +647,7 @@ def test_mst_spans_all_nodes(G):
     )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_edge_removal_disconnects(G):
     """
@@ -661,7 +661,7 @@ def test_mst_edge_removal_disconnects(G):
         consequence of having n-1 edges for n vertices with no cycles.
 
     Test Strategy:
-        Use the custom strategy for 100 varied-weight graphs. Compute the MST,
+        Use the custom strategy for 200 varied-weight graphs. Compute the MST,
         remove its first edge, and assert the resulting graph is disconnected.
 
     Preconditions:
@@ -682,7 +682,7 @@ def test_mst_edge_removal_disconnects(G):
     )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_idempotence(G):
     """
@@ -696,7 +696,7 @@ def test_mst_idempotence(G):
         must return it unchanged.
 
     Test Strategy:
-        Use the custom strategy for 100 varied-weight graphs. Compute
+        Use the custom strategy for 200 varied-weight graphs. Compute
         T1 = MST(G), then T2 = MST(T1), and assert identical edge sets.
 
     Preconditions:
@@ -713,7 +713,7 @@ def test_mst_idempotence(G):
         "MST is not idempotent: MST(MST(G)) ≠ MST(G)."
     )
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_cut_property(G):
     """
@@ -776,7 +776,7 @@ def test_mst_cut_property(G):
         f"(weight={min_weight}) is in the MST."
     )   
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs(), connected_weighted_graphs())
 def test_mst_on_disconnected_graph_returns_forest(G1, G2):
     """
@@ -828,6 +828,8 @@ def test_mst_on_disconnected_graph_returns_forest(G1, G2):
     assert len(components) == 2, (
         f"Spanning forest should have 2 components, got {len(components)}."
     )
+
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_subgraph_property(G):
     """
@@ -840,7 +842,7 @@ def test_mst_subgraph_property(G):
         select a subset of G's edges.
 
     Test Strategy:
-        Use the custom strategy for 100 varied-weight graphs. Iterate over
+        Use the custom strategy for 200 varied-weight graphs. Iterate over
         all MST edges and assert each exists in G.
 
     Preconditions:
@@ -859,7 +861,7 @@ def test_mst_subgraph_property(G):
         )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_minimal_edges_property(G):
     """
@@ -873,7 +875,7 @@ def test_mst_minimal_edges_property(G):
         cycle property of trees.
 
     Test Strategy:
-        Use the custom strategy for 100 varied-weight graphs. Find an edge in G
+        Use the custom strategy for 200 varied-weight graphs. Find an edge in G
         not in the MST, add it to a copy of the MST, and verify the result is
         no longer a valid tree.
 
@@ -897,7 +899,7 @@ def test_mst_minimal_edges_property(G):
             break
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_invariant_under_relabeling(G):
     """
@@ -912,7 +914,7 @@ def test_mst_invariant_under_relabeling(G):
         is determined entirely by edge weights and connectivity.
 
     Test Strategy:
-        Use the custom strategy for 100 varied-weight graphs. Compute MST of G,
+        Use the custom strategy for 200 varied-weight graphs. Compute MST of G,
         relabel all nodes by adding 100, compute MST of relabeled graph, and
         compare edge counts and total weights.
 
@@ -941,7 +943,7 @@ def test_mst_invariant_under_relabeling(G):
     )
 
 
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_weight_scaling(G):
     """
@@ -957,7 +959,7 @@ def test_mst_weight_scaling(G):
         identical MST.
 
     Test Strategy:
-        Use the custom strategy for 100 varied-weight graphs. Compute T1 = MST(G),
+        Use the custom strategy for 200 varied-weight graphs. Compute T1 = MST(G),
         then multiply all weights by 5 and compute T2 = MST(G). Assert identical
         edge sets.
 
@@ -981,143 +983,58 @@ def test_mst_weight_scaling(G):
         "MST edge set changed after uniform weight scaling."
     )
 
-
-@settings(max_examples=100)
-@given(connected_weighted_graphs(), st.data())
-def test_mst_uniqueness_under_distinct_weights(G, data):
-    """
-    Property (Invariant — MST Uniqueness):
-        When all edge weights in a graph are distinct, the MST is unique —
-        Kruskal's algorithm and Prim's algorithm must return identical edge sets.
-
-    Mathematical Foundation:
-        Theorem: If all edge weights are distinct, the MST is unique.
-        Proof sketch: Suppose two different MSTs T1 and T2 exist. Let e be
-        the minimum weight edge in T1 that is not in T2. Adding e to T2
-        creates a cycle. That cycle must contain an edge e' not in T1
-        (otherwise T1 would have a cycle). Since e is chosen as the minimum
-        weight edge in T1 \\ T2, and e' is in T2 \\ T1, we must have
-        w(e) < w(e') (by distinctness). Replacing e' with e in T2 gives a
-        spanning tree of strictly lesser weight — contradicting T2 being
-        an MST. Therefore T1 = T2.
-
-        This means with distinct weights, ANY correct MST algorithm must
-        return the same edge set, regardless of implementation details
-        like tie-breaking or traversal order.
-
-    Test Strategy:
-        Use the custom strategy to generate graphs. Draw a random permutation
-        of 1..m (where m = number of edges) via st.permutations() to assign
-        strictly unique weights — fully controlled by Hypothesis so failing
-        examples can be reliably shrunk and replayed. Compute MST using both
-        Kruskal ('kruskal') and Prim ('prim') and assert identical edge sets.
-
-    Preconditions:
-        All edge weights must be strictly distinct (enforced by permutation).
-        Graph must be connected.
-
-    Why This Matters:
-        If Kruskal and Prim return different edge sets under distinct weights,
-        at least one implementation is wrong — both should converge to the
-        same unique MST. This is the strongest possible correctness check:
-        two independent algorithms must agree on every single edge.
-    """
-    edges = list(G.edges())
-    m = len(edges)
-
-    # Draw a permutation via Hypothesis — fully reproducible, shrinkable
-    unique_weights = data.draw(st.permutations(range(1, m + 1)))
-
-    for (u, v), w in zip(edges, unique_weights):
-        G[u][v]['weight'] = w
-
-    T_kruskal = nx.minimum_spanning_tree(G, algorithm='kruskal')
-    T_prim    = nx.minimum_spanning_tree(G, algorithm='prim')
-
-    edges_kruskal = set(tuple(sorted(e)) for e in T_kruskal.edges())
-    edges_prim    = set(tuple(sorted(e)) for e in T_prim.edges())
-
-    assert edges_kruskal == edges_prim, (
-        f"MST uniqueness violated under distinct weights:\n"
-        f"  Kruskal edges: {edges_kruskal}\n"
-        f"  Prim edges:    {edges_prim}\n"
-        f"  Both algorithms should return the same unique MST."
-    )
-
-
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
-def test_mst_cut_and_cycle_duality(G):
+def test_mst_total_weight_minimality(G):
     """
-    Property (Invariant — Cut-Cycle Duality):
-        For every edge e in the MST, e is the minimum weight edge crossing
-        some cut (Cut Property). For every edge e NOT in the MST, e is the
-        maximum weight edge in some cycle (Cycle Property). Together these
-        two conditions are necessary AND sufficient to characterize the MST.
+    Property (Invariant — Global Optimality):
+        The total weight of the MST must be less than or equal to the
+        total weight of every other spanning tree of the graph.
 
     Mathematical Foundation:
-        This test unifies the Cut Property and Cycle Property into a single
-        duality check — the complete characterization theorem for MSTs:
+        This is the direct definition of a minimum spanning tree —
+        it is the spanning tree with the lowest possible total edge weight.
+        All other spanning trees must have weight ≥ MST weight.
+        This test verifies global optimality by exhaustive comparison:
+        enumerate every spanning tree of G and assert none is cheaper.
 
-            e ∈ MST  ↔  e is min weight on some cut
-            e ∉ MST  ↔  e is max weight on some cycle
-
-        The "fundamental cycle" of a non-tree edge e = (u,v) is the unique
-        cycle formed by adding e to the MST (the cycle consists of e plus
-        the unique path from u to v in the MST). By the Cycle Property,
-        e must be the maximum weight edge in this fundamental cycle —
-        otherwise the MST could be improved.
+        A spanning tree of G is any connected acyclic subgraph that includes
+        all vertices. NetworkX's nx.SpanningTreeIterator enumerates all of
+        them in order of increasing weight.
 
     Test Strategy:
-        For each non-tree edge e = (u,v) with weight w_e:
-        1. Find the unique path from u to v in the MST (the fundamental cycle path)
-        2. Find the maximum weight edge on that path
-        3. Assert w_e ≥ max path weight (e must be at least as heavy as
-           every MST edge on the path, otherwise e should have replaced it)
-
-        When weights are unique, w_e > max path weight strictly.
-        With possible ties, w_e ≥ max path weight is the correct form.
+        Use the custom strategy for small varied-weight graphs (≤ 7 nodes
+        to keep enumeration tractable). Compute the MST weight, then use
+        nx.SpanningTreeIterator to enumerate ALL spanning trees and verify
+        none has a lower total weight than the MST.
 
     Preconditions:
-        Graph must be connected and have at least one non-tree edge
-        (i.e., more edges than n-1). Edge weights from the custom strategy
-        (1–20) may have ties, so we use ≥ instead of >.
+        Graph must be connected. Kept small (n ≤ 7) because the number of
+        spanning trees grows exponentially — Cayley's formula gives n^(n-2)
+        for complete graphs, so n=7 gives at most 7^5 = 16,807 trees.
 
     Why This Matters:
-        This is the most comprehensive single test in the suite. It directly
-        verifies the optimality condition that makes the MST minimal: every
-        excluded edge is heavier than every edge it could replace. A failure
-        means a non-tree edge is lighter than an MST edge it could swap with
-        — proving the MST is not actually minimum.
+        This is the most direct possible correctness check — it literally
+        verifies the definition of "minimum" by comparing against every
+        alternative. All other MST tests verify structural properties
+        (tree shape, edge count, cut/cycle conditions). This test directly
+        verifies the weight optimality guarantee.
     """
+    # Keep small for tractability — limit to graphs with ≤ 7 nodes
+    if G.number_of_nodes() > 7:
+        return
+
     T = nx.minimum_spanning_tree(G)
+    mst_weight = sum(d['weight'] for _, _, d in T.edges(data=True))
 
-    for u, v in G.edges():
-        if T.has_edge(u, v) or T.has_edge(v, u):
-            continue  # skip tree edges, only check non-tree edges
-
-        w_e = G[u][v]['weight']
-
-        # Find the unique path from u to v in the MST
-        try:
-            path = nx.shortest_path(T, u, v)
-        except nx.NetworkXNoPath:
-            continue
-
-        # Find max weight edge along the MST path (the fundamental cycle)
-        max_path_weight = max(
-            T[path[i]][path[i + 1]]['weight']
-            for i in range(len(path) - 1)
+    for spanning_tree in nx.SpanningTreeIterator(G):
+        tree_weight = sum(d['weight'] for _, _, d in spanning_tree.edges(data=True))
+        assert mst_weight <= tree_weight, (
+            f"MST weight {mst_weight} is greater than another spanning tree "
+            f"with weight {tree_weight} — MST is not globally minimum."
         )
 
-        assert w_e >= max_path_weight, (
-            f"Cut-Cycle duality violated: non-tree edge ({u},{v}) has weight "
-            f"{w_e} which is LESS than max MST path weight {max_path_weight}. "
-            f"This edge should have replaced the heavier MST edge — "
-            f"the MST is not actually minimum."
-        )
-
-@settings(max_examples=100)
+@settings(max_examples=200)
 @given(connected_weighted_graphs())
 def test_mst_cycle_property(G):
     """
@@ -1190,53 +1107,191 @@ def test_mst_cycle_property(G):
                 f"with weight={max_weight} is in the MST but should not be."
             )
 
-@settings(max_examples=100)
-@given(connected_weighted_graphs())
-def test_mst_total_weight_minimality(G):
+@settings(max_examples=200)
+@given(connected_weighted_graphs(), st.data())
+def test_mst_uniqueness_under_distinct_weights(G, data):
     """
-    Property (Invariant — Global Optimality):
-        The total weight of the MST must be less than or equal to the
-        total weight of every other spanning tree of the graph.
+    Property (Invariant — MST Uniqueness):
+        When all edge weights in a graph are distinct, the MST is unique —
+        Kruskal's algorithm and Prim's algorithm must return identical edge sets.
 
     Mathematical Foundation:
-        This is the direct definition of a minimum spanning tree —
-        it is the spanning tree with the lowest possible total edge weight.
-        All other spanning trees must have weight ≥ MST weight.
-        This test verifies global optimality by exhaustive comparison:
-        enumerate every spanning tree of G and assert none is cheaper.
+        Theorem: If all edge weights are distinct, the MST is unique.
+        Proof sketch: Suppose two different MSTs T1 and T2 exist. Let e be
+        the minimum weight edge in T1 that is not in T2. Adding e to T2
+        creates a cycle. That cycle must contain an edge e' not in T1
+        (otherwise T1 would have a cycle). Since e is chosen as the minimum
+        weight edge in T1 \\ T2, and e' is in T2 \\ T1, we must have
+        w(e) < w(e') (by distinctness). Replacing e' with e in T2 gives a
+        spanning tree of strictly lesser weight — contradicting T2 being
+        an MST. Therefore T1 = T2.
 
-        A spanning tree of G is any connected acyclic subgraph that includes
-        all vertices. NetworkX's nx.SpanningTreeIterator enumerates all of
-        them in order of increasing weight.
+        This means with distinct weights, ANY correct MST algorithm must
+        return the same edge set, regardless of implementation details
+        like tie-breaking or traversal order.
 
     Test Strategy:
-        Use the custom strategy for small varied-weight graphs (≤ 7 nodes
-        to keep enumeration tractable). Compute the MST weight, then use
-        nx.SpanningTreeIterator to enumerate ALL spanning trees and verify
-        none has a lower total weight than the MST.
+        Use the custom strategy to generate graphs. Draw a random permutation
+        of 1..m (where m = number of edges) via st.permutations() to assign
+        strictly unique weights — fully controlled by Hypothesis so failing
+        examples can be reliably shrunk and replayed. Compute MST using both
+        Kruskal ('kruskal') and Prim ('prim') and assert identical edge sets.
 
     Preconditions:
-        Graph must be connected. Kept small (n ≤ 7) because the number of
-        spanning trees grows exponentially — Cayley's formula gives n^(n-2)
-        for complete graphs, so n=7 gives at most 7^5 = 16,807 trees.
+        All edge weights must be strictly distinct (enforced by permutation).
+        Graph must be connected.
 
     Why This Matters:
-        This is the most direct possible correctness check — it literally
-        verifies the definition of "minimum" by comparing against every
-        alternative. All other MST tests verify structural properties
-        (tree shape, edge count, cut/cycle conditions). This test directly
-        verifies the weight optimality guarantee.
+        If Kruskal and Prim return different edge sets under distinct weights,
+        at least one implementation is wrong — both should converge to the
+        same unique MST. This is the strongest possible correctness check:
+        two independent algorithms must agree on every single edge.
     """
-    # Keep small for tractability — limit to graphs with ≤ 7 nodes
-    if G.number_of_nodes() > 7:
-        return
+    edges = list(G.edges())
+    m = len(edges)
 
+    # Draw a permutation via Hypothesis — fully reproducible, shrinkable
+    unique_weights = data.draw(st.permutations(range(1, m + 1)))
+
+    for (u, v), w in zip(edges, unique_weights):
+        G[u][v]['weight'] = w
+
+    T_kruskal = nx.minimum_spanning_tree(G, algorithm='kruskal')
+    T_prim    = nx.minimum_spanning_tree(G, algorithm='prim')
+
+    edges_kruskal = set(tuple(sorted(e)) for e in T_kruskal.edges())
+    edges_prim    = set(tuple(sorted(e)) for e in T_prim.edges())
+
+    assert edges_kruskal == edges_prim, (
+        f"MST uniqueness violated under distinct weights:\n"
+        f"  Kruskal edges: {edges_kruskal}\n"
+        f"  Prim edges:    {edges_prim}\n"
+        f"  Both algorithms should return the same unique MST."
+    )
+
+
+@settings(max_examples=200)
+@given(connected_weighted_graphs())
+def test_mst_cut_and_cycle_duality(G):
+    """
+    Property (Invariant — Cut-Cycle Duality):
+        For every edge e in the MST, e is the minimum weight edge crossing
+        some cut (Cut Property). For every edge e NOT in the MST, e is the
+        maximum weight edge in some cycle (Cycle Property). Together these
+        two conditions are necessary AND sufficient to characterize the MST.
+
+    Mathematical Foundation:
+        This test unifies the Cut Property and Cycle Property into a single
+        duality check — the complete characterization theorem for MSTs:
+
+            e ∈ MST  ↔  e is min weight on some cut
+            e ∉ MST  ↔  e is max weight on some cycle
+
+        The "fundamental cycle" of a non-tree edge e = (u,v) is the unique
+        cycle formed by adding e to the MST (the cycle consists of e plus
+        the unique path from u to v in the MST). By the Cycle Property,
+        e must be the maximum weight edge in this fundamental cycle —
+        otherwise the MST could be improved.
+
+    Test Strategy:
+        For each non-tree edge e = (u,v) with weight w_e:
+        1. Find the unique path from u to v in the MST (the fundamental cycle path)
+        2. Find the maximum weight edge on that path
+        3. Assert w_e ≥ max path weight (e must be at least as heavy as
+           every MST edge on the path, otherwise e should have replaced it)
+
+        When weights are unique, w_e > max path weight strictly.
+        With possible ties, w_e ≥ max path weight is the correct form.
+
+    Preconditions:
+        Graph must be connected and have at least one non-tree edge
+        (i.e., more edges than n-1). Edge weights from the custom strategy
+        (1–20) may have ties, so we use ≥ instead of >.
+
+    Why This Matters:
+        This is the most comprehensive single test in the suite. It directly
+        verifies the optimality condition that makes the MST minimal: every
+        excluded edge is heavier than every edge it could replace. A failure
+        means a non-tree edge is lighter than an MST edge it could swap with
+        — proving the MST is not actually minimum.
+    """
     T = nx.minimum_spanning_tree(G)
-    mst_weight = sum(d['weight'] for _, _, d in T.edges(data=True))
 
-    for spanning_tree in nx.SpanningTreeIterator(G):
-        tree_weight = sum(d['weight'] for _, _, d in spanning_tree.edges(data=True))
-        assert mst_weight <= tree_weight, (
-            f"MST weight {mst_weight} is greater than another spanning tree "
-            f"with weight {tree_weight} — MST is not globally minimum."
+    for u, v in G.edges():
+        if T.has_edge(u, v) or T.has_edge(v, u):
+            continue  # skip tree edges, only check non-tree edges
+
+        w_e = G[u][v]['weight']
+
+        # Find the unique path from u to v in the MST
+        try:
+            path = nx.shortest_path(T, u, v)
+        except nx.NetworkXNoPath:
+            continue
+
+        # Find max weight edge along the MST path (the fundamental cycle)
+        max_path_weight = max(
+            T[path[i]][path[i + 1]]['weight']
+            for i in range(len(path) - 1)
         )
+
+        assert w_e >= max_path_weight, (
+            f"Cut-Cycle duality violated: non-tree edge ({u},{v}) has weight "
+            f"{w_e} which is LESS than max MST path weight {max_path_weight}. "
+            f"This edge should have replaced the heavier MST edge — "
+            f"the MST is not actually minimum."
+        )
+
+
+# ================================
+# Boundary / Stress Tests
+# ================================
+
+@given(st.integers(min_value=1, max_value=3))
+def test_small_graph_edge_cases(n):
+    """
+    Property (Boundary Condition):
+        Algorithms behave correctly on very small graphs (1–3 nodes).
+
+    Mathematical Foundation:
+        Edge cases (n=1: isolated node, n=2: single edge) are where
+        off-by-one errors and incorrect base cases most often appear.
+        A path graph P_n is connected for n ≥ 2 and trivially a single
+        node for n = 1.
+
+    Test Strategy:
+        Generate path graphs of size 1–3 and verify both structural
+        properties and algorithm correctness, including shortest path
+        lengths and MST properties.
+
+    Preconditions:
+        None — this test is designed to work even for degenerate inputs.
+
+    Why This Matters:
+        Algorithms that work correctly on large graphs often fail silently
+        on boundary inputs. Testing small graphs catches missing base cases
+        and incorrect handling of trivial inputs.
+    """
+    G = nx.path_graph(n)
+
+    if n == 1:
+        assert G.number_of_nodes() == 1
+
+        # Shortest path: trivial
+        assert nx.shortest_path_length(G, 0, 0) == 0
+
+        # MST: no edges
+        T = nx.minimum_spanning_tree(G)
+        assert T.number_of_edges() == 0
+
+    else:
+        assert nx.is_connected(G)
+
+        # Shortest path from first to last node
+        assert nx.shortest_path_length(G, 0, n - 1) == n - 1
+
+        # MST properties
+        T = nx.minimum_spanning_tree(G)
+        assert T.number_of_edges() == n - 1
+        assert nx.is_tree(T)
+
