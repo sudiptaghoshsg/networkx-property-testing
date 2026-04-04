@@ -113,6 +113,11 @@ pytest test_graph_properties.py::test_mst_cut_property -v
 | `test_mst_uniqueness_under_distinct_weights` | Invariant | With distinct weights, Kruskal and Prim return identical edge sets |
 | `test_mst_cut_and_cycle_duality` | Invariant | Every non-tree edge is heavier than every MST edge it could replace |
 
+### Boundary (1 test)
+
+| Test | Property Type | Description |
+|---|---|---|
+| `test_small_graph_edge_cases` | Boundary | Correct behaviour on very small graphs (1–3 nodes) |
 
 ---
 
@@ -191,8 +196,9 @@ Results (Python 3.13, Hypothesis 6.151.9):
 | `test_mst_uniqueness_under_distinct_weights` | 200 | 0 | max_examples=200 |
 | `test_mst_cut_and_cycle_duality` | 200 | 0 | max_examples=200 |
 
-**Total: ~5,200 automatically generated graph examples tested across 26 tests. 0 failures.**
+**Total: ~5,203 automatically generated graph examples tested across 26 tests. 0 failures.**
 
+> `test_small_graph_edge_cases` exhausts its search space at 3 examples by design — path graphs of size 1, 2, and 3 are the only valid inputs for that boundary test.
 
 - [Hypothesis documentation](https://hypothesis.readthedocs.io/)
 - [NetworkX documentation](https://networkx.org/documentation/stable/)
