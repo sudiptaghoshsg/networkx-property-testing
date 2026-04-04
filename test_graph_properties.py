@@ -1241,3 +1241,57 @@ def test_mst_cut_and_cycle_duality(G):
             f"This edge should have replaced the heavier MST edge — "
             f"the MST is not actually minimum."
         )
+
+
+# ================================
+# Boundary / Stress Tests
+# ================================
+
+@given(st.integers(min_value=1, max_value=3))
+def test_small_graph_edge_cases(n):
+    """
+    Property (Boundary Condition):
+        Algorithms behave correctly on very small graphs (1–3 nodes).
+
+    Mathematical Foundation:
+        Edge cases (n=1: isolated node, n=2: single edge) are where
+        off-by-one errors and incorrect base cases most often appear.
+        A path graph P_n is connected for n ≥ 2 and trivially a single
+        node for n = 1.
+
+    Test Strategy:
+        Generate path graphs of size 1–3 and verify both structural
+        properties and algorithm correctness, including shortest path
+        lengths and MST properties.
+
+    Preconditions:
+        None — this test is designed to work even for degenerate inputs.
+
+    Why This Matters:
+        Algorithms that work correctly on large graphs often fail silently
+        on boundary inputs. Testing small graphs catches missing base cases
+        and incorrect handling of trivial inputs.
+    """
+    G = nx.path_graph(n)
+
+    if n == 1:
+        assert G.number_of_nodes() == 1
+
+        # Shortest path: trivial
+        assert nx.shortest_path_length(G, 0, 0) == 0
+
+        # MST: no edges
+        T = nx.minimum_spanning_tree(G)
+        assert T.number_of_edges() == 0
+
+    else:
+        assert nx.is_connected(G)
+
+        # Shortest path from first to last node
+        assert nx.shortest_path_length(G, 0, n - 1) == n - 1
+
+        # MST properties
+        T = nx.minimum_spanning_tree(G)
+        assert T.number_of_edges() == n - 1
+        assert nx.is_tree(T)
+
