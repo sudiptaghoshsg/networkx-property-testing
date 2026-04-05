@@ -1295,3 +1295,74 @@ def test_small_graph_edge_cases(n):
         assert T.number_of_edges() == n - 1
         assert nx.is_tree(T)
 
+
+
+# ================================
+# Robustness & Bug Exploration Tests
+# We systematically attempted to identify potential issues in NetworkX by testing:
+# 1. Negative weights — comparing Dijkstra vs Bellman-Ford for consistency
+# ================================
+
+@settings(max_examples=500)
+@given(connected_weighted_graphs())
+def test_dijkstra_negative_weight_detection(G):
+    """
+    Property (Robustness — Negative Weights):
+        Dijkstra’s algorithm is not guaranteed to produce correct results
+        in the presence of negative edge weights. If it returns a result,
+        it must match the result from Bellman-Ford.
+
+    Mathematical Foundation:
+        Dijkstra’s algorithm relies on a greedy assumption that once a node’s
+        shortest distance is finalized, it cannot be improved. This assumption
+        fails when negative edge weights are present. In contrast, Bellman-Ford
+        correctly computes shortest paths even with negative weights (as long
+        as no negative cycle exists).
+
+    Assumptions:
+        - Graph is connected
+        - At least one edge has a negative weight
+        - No negative cycle is introduced (otherwise shortest path is undefined)
+
+    Test Strategy:
+        Assign uniform positive weights, then introduce a single negative edge.
+        Run Dijkstra’s algorithm:
+            - If it raises an exception → acceptable behavior
+            - If it returns a result → compare with Bellman-Ford (ground truth)
+
+    Why This Matters:
+        If Dijkstra silently returns an incorrect result without raising an
+        error, it can lead to undetected failures in real-world applications
+        relying on shortest path computations.
+    """
+
+    # Step 1: Normalize all weights to positive
+    for u, v in G.edges():
+        G[u][v]['weight'] = 1
+
+    # Step 2: Introduce a single negative edge
+    u0, v0 = list(G.edges())[0]
+    G[u0][v0]['weight'] = -1
+
+    nodes = list(G.nodes())
+    source, target = nodes[0], nodes[-1]
+
+    # Optional safety: skip if negative cycle exists
+    if nx.negative_edge_cycle(G, weight='weight'):
+        return
+
+    # Step 3: Run Dijkstra
+    try:
+        d_dijkstra = nx.shortest_path_length(G, source, target, weight='weight')
+    except Exception:
+        return  # Acceptable: algorithm rejected invalid input
+
+    # Step 4: Compare with Bellman-Ford (ground truth)
+    d_bellman = nx.shortest_path_length(
+        G, source, target, weight='weight', method='bellman-ford'
+    )
+
+    # Step 5: Validate consistency
+    assert d_dijkstra == d_bellman, (
+        f"BUG FOUND: Dijkstra={d_dijkstra}, Bellman-Ford={d_bellman}"
+    )
