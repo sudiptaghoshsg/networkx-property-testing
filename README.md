@@ -165,6 +165,21 @@ These properties are rooted in classical results (e.g., Tarjan, 1983, *Data Stru
 
 **Test Independence:** Each test operates on a fresh graph instance, avoiding shared state and ensuring reliable execution.
 
+---
+
+## Key Insights
+
+**1. The MST Theoretical Trinity:**
+The three tests `test_mst_cut_property`, `test_mst_cycle_property`, and `test_mst_cut_and_cycle_duality` collectively constitute a complete correctness argument for MST algorithms. The Cut Property establishes which edges must be included; the Cycle Property establishes which edges must be excluded; and the Cut-Cycle Duality verifies both conditions simultaneously for every edge in the graph. Together they are not merely complementary but mathematically equivalent to a full proof of MST optimality (Tarjan, 1983).
+
+**2. Optimal Substructure as a Foundational Property:**
+The correctness of Dijkstra's algorithm rests on the principle of optimal substructure — every sub-path of a shortest path is itself a shortest path. This property is WHY dynamic programming and greedy algorithms work on shortest paths. Testing it directly (rather than just testing final outputs) verifies the algorithmic foundation, not merely the results.
+
+**3. Metamorphic Testing as a Substitute for Oracles:**
+Several properties (edge addition, weight increase, weight scaling, relabeling) are metamorphic — they define relationships between outputs on related inputs rather than checking absolute correctness. This approach is particularly valuable for graph algorithms where computing the "correct" answer independently is as hard as running the algorithm itself.
+
+**4. Distinct Weights as a Uniqueness Guarantee:**
+When all edge weights are distinct, both Kruskal's and Prim's algorithms must converge to the same unique MST. Testing this with `st.permutations()` — which generates all possible strict orderings — provides the strongest possible agreement test between two independent algorithmic implementations.
 
 -----
 
