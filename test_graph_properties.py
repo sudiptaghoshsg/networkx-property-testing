@@ -1529,3 +1529,67 @@ def test_dijkstra_floating_point_consistency(G):
         f"BUG FOUND: Dijkstra={d_dijkstra}, Bellman-Ford={d_bellman}, "
         f"diff={abs(d_dijkstra - d_bellman)}"
     )
+
+
+@settings(max_examples=300)
+@given(st.integers(min_value=3, max_value=20))
+def test_multigraph_mst_properties(n):
+    """
+    Property (Robustness — MultiGraph MST):
+        The MST of a MultiGraph must satisfy tree properties and correctly
+        select the minimum-weight edge among parallel edges.
+
+    Mathematical Foundation:
+        In a MultiGraph, multiple edges may connect the same pair of nodes.
+        MST algorithms must choose the minimum-weight edge among parallel
+        edges while maintaining a valid spanning tree.
+
+    Assumptions:
+        - Graph is connected
+        - Parallel edges exist with distinct weights
+
+    Test Strategy:
+        Construct a MultiGraph with duplicate edges:
+            - One high-weight edge (weight = 5)
+            - One low-weight edge (weight = 1)
+        for each pair of consecutive nodes.
+        Verify:
+            - MST has n−1 edges
+            - MST is connected
+            - MST selects only minimum-weight edges
+            - MST edges belong to the original graph
+
+    Why This Matters:
+        Incorrect handling of parallel edges can lead to suboptimal MSTs
+        or incorrect edge selection in real-world multigraph scenarios.
+    """
+
+    MG = nx.MultiGraph()
+    MG.add_nodes_from(range(n))
+
+    # Add parallel edges: high weight and low weight
+    for i in range(n - 1):
+        MG.add_edge(i, i + 1, weight=5)  # high-weight edge
+        MG.add_edge(i, i + 1, weight=1)  # low-weight edge (should be chosen)
+
+    T = nx.minimum_spanning_tree(MG)
+
+    # Tree properties
+    assert T.number_of_edges() == n - 1
+    assert nx.is_connected(T)
+
+    # Subgraph property
+    for u, v, data in T.edges(data=True):
+        assert MG.has_edge(u, v)
+
+    # Total weight must be minimal (all edges weight = 1)
+    mst_weight = sum(d['weight'] for _, _, d in T.edges(data=True))
+    assert mst_weight == n - 1, (
+        f"Incorrect MST weight: {mst_weight}, expected {n - 1}"
+    )
+
+    # Strong check: ensure only lowest-weight edges are chosen
+    for _, _, d in T.edges(data=True):
+        assert d['weight'] == 1, (
+            "MST selected a higher-weight parallel edge instead of the minimum."
+        )
