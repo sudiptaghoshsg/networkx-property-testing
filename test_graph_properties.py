@@ -1301,6 +1301,7 @@ def test_small_graph_edge_cases(n):
 # Robustness & Bug Exploration Tests
 # We systematically attempted to identify potential issues in NetworkX by testing:
 # 1. Negative weights — comparing Dijkstra vs Bellman-Ford for consistency
+# 2. Dense/complete graphs — stress testing algorithm behavior under high connectivity
 # ================================
 
 @settings(max_examples=500)
@@ -1366,3 +1367,63 @@ def test_dijkstra_negative_weight_detection(G):
     assert d_dijkstra == d_bellman, (
         f"BUG FOUND: Dijkstra={d_dijkstra}, Bellman-Ford={d_bellman}"
     )
+
+
+@settings(max_examples=300)
+@given(st.integers(min_value=4, max_value=10))
+def test_mst_dense_graph_cut_property(n):
+    """
+Property (Invariant — Cut Property on Dense Graphs):
+    For any cut in a graph, the minimum-weight edge crossing the cut
+    must belong to the MST when the minimum is unique.
+
+Mathematical Foundation:
+    The cut property is a fundamental theorem underlying MST algorithms
+    such as Kruskal’s and Prim’s. Dense graphs (complete graphs) maximize
+    the number of edges and cuts, providing a strong stress test.
+
+Assumptions:
+    - Graph is complete (dense)
+    - Edge weights are positive
+    - The minimum crossing edge for a cut is unique
+
+Test Strategy:
+    Generate a complete graph with deterministically assigned positive weights.
+    For each single-node cut S = {v}, identify the minimum crossing edge and
+    verify it is included in the MST.
+
+Why This Matters:
+    Violating the cut property indicates a fundamental correctness issue in MST
+    construction, as the cut property is both necessary and sufficient for
+    optimality in greedy MST algorithms like Kruskal’s and Prim’s.
+    """
+
+
+    G = nx.complete_graph(n)
+
+    for i, (u, v) in enumerate(G.edges()):
+        G[u][v]['weight'] = (i % 20) + 1
+
+    T = nx.minimum_spanning_tree(G)
+
+    for node in G.nodes():
+        S = {node}
+
+        cut_edges = [
+            (u, v, G[u][v]['weight'])
+            for u, v in G.edges()
+            if (u in S) != (v in S)
+        ]
+
+        if not cut_edges:
+            continue
+
+        min_weight = min(w for _, _, w in cut_edges)
+        min_cut_edges = [(u, v) for u, v, w in cut_edges if w == min_weight]
+
+        if len(min_cut_edges) == 1:
+            u, v = min_cut_edges[0]
+            assert T.has_edge(u, v) or T.has_edge(v, u), (
+                f"BUG FOUND: Cut property violated. Edge ({u},{v}) "
+                f"with weight={min_weight} missing from MST."
+            )
