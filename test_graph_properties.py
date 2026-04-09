@@ -1351,7 +1351,7 @@ def test_single_edge_weight_perturbation(n):
     assert nx.is_tree(T)
     assert T.number_of_edges() == n - 1
 
-    
+
 # ================================
 # Robustness & Bug Exploration Tests
 # We systematically attempted to identify potential issues in NetworkX by testing:
@@ -1428,29 +1428,29 @@ def test_dijkstra_negative_weight_detection(G):
 @given(st.integers(min_value=4, max_value=10))
 def test_mst_dense_graph_cut_property(n):
     """
-Property (Invariant — Cut Property on Dense Graphs):
-    For any cut in a graph, the minimum-weight edge crossing the cut
-    must belong to the MST when the minimum is unique.
+    Property (Invariant — Cut Property on Dense Graphs):
+        For any cut in a graph, the minimum-weight edge crossing the cut
+        must belong to the MST when the minimum is unique.
 
-Mathematical Foundation:
-    The cut property is a fundamental theorem underlying MST algorithms
-    such as Kruskal’s and Prim’s. Dense graphs (complete graphs) maximize
-    the number of edges and cuts, providing a strong stress test.
+    Mathematical Foundation:
+        The cut property is a fundamental theorem underlying MST algorithms
+        such as Kruskal’s and Prim’s. Dense graphs (complete graphs) maximize
+        the number of edges and cuts, providing a strong stress test.
 
-Assumptions:
-    - Graph is complete (dense)
-    - Edge weights are positive
-    - The minimum crossing edge for a cut is unique
+    Assumptions:
+        - Graph is complete (dense)
+        - Edge weights are positive
+        - The minimum crossing edge for a cut is unique
 
-Test Strategy:
-    Generate a complete graph with deterministically assigned positive weights.
-    For each single-node cut S = {v}, identify the minimum crossing edge and
-    verify it is included in the MST.
+    Test Strategy:
+        Generate a complete graph with deterministically assigned positive weights.
+        For each single-node cut S = {v}, identify the minimum crossing edge and
+        verify it is included in the MST.
 
-Why This Matters:
-    Violating the cut property indicates a fundamental correctness issue in MST
-    construction, as the cut property is both necessary and sufficient for
-    optimality in greedy MST algorithms like Kruskal’s and Prim’s.
+    Why This Matters:
+        Violating the cut property indicates a fundamental correctness issue in MST
+        construction, as the cut property is both necessary and sufficient for
+        optimality in greedy MST algorithms like Kruskal’s and Prim’s.
     """
 
 
@@ -1482,3 +1482,50 @@ Why This Matters:
                 f"BUG FOUND: Cut property violated. Edge ({u},{v}) "
                 f"with weight={min_weight} missing from MST."
             )
+
+
+@settings(max_examples=500)
+@given(connected_weighted_graphs())
+def test_dijkstra_floating_point_consistency(G):    
+    """
+    Property (Robustness — Floating Point Consistency):
+        Shortest path results from Dijkstra and Bellman-Ford should be
+        numerically consistent within floating-point tolerance.
+
+    Mathematical Foundation:
+        Floating-point arithmetic is not exact (IEEE 754). Different
+        accumulation orders may introduce small rounding differences.
+        Both algorithms should still agree within a small tolerance.
+
+    Assumptions:
+        - Graph is connected
+        - Edge weights are floating-point values (non-negative)
+
+    Test Strategy:
+        Assign floating-point weights to edges and compare shortest
+        path lengths computed by Dijkstra and Bellman-Ford within
+        a tolerance (1e-9).
+
+    Why This Matters:
+        Ensures numerical stability and consistency across algorithms,
+        preventing discrepancies due to floating-point precision issues.
+    """
+
+    # Assign floating-point weights
+    float_weights = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    for i, (u, v) in enumerate(G.edges()):
+        G[u][v]['weight'] = float_weights[i % len(float_weights)]
+
+    nodes = list(G.nodes())
+    source, target = nodes[0], nodes[-1]
+
+    d_dijkstra = nx.shortest_path_length(G, source, target, weight='weight')
+    d_bellman  = nx.shortest_path_length(
+        G, source, target, weight='weight', method='bellman-ford'
+    )
+
+    # Use tolerance comparison
+    assert abs(d_dijkstra - d_bellman) < 1e-9, (
+        f"BUG FOUND: Dijkstra={d_dijkstra}, Bellman-Ford={d_bellman}, "
+        f"diff={abs(d_dijkstra - d_bellman)}"
+    )
