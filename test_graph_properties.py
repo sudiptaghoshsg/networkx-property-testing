@@ -1296,7 +1296,62 @@ def test_small_graph_edge_cases(n):
         assert nx.is_tree(T)
 
 
+@settings(max_examples=200)
+@given(st.integers(min_value=3, max_value=10))
+def test_single_edge_weight_perturbation(n):
+    """
+    Property (Boundary + Sensitivity Test):
+        Small local changes in edge weights should produce predictable
+        and consistent changes in shortest paths and MST.
 
+    Mathematical Foundation:
+        In a path graph, there is exactly one simple path between any
+        two nodes. Therefore, increasing the weight of any edge on
+        that path must increase the total shortest path length.
+
+        Similarly, for a tree (like a path graph), the MST is the graph
+        itself. Changing weights should not change its structure.
+
+    Test Strategy:
+        1. Generate a path graph (unique paths)
+        2. Assign unit weights
+        3. Increase weight of one edge
+        4. Verify:
+            - shortest path increases correctly
+            - MST structure remains unchanged
+
+    Why This Matters:
+        Ensures algorithms respond correctly to small perturbations
+        and do not exhibit unstable or inconsistent behavior.
+    """
+    G = nx.path_graph(n)
+
+    # Assign unit weights
+    for u, v in G.edges():
+        G[u][v]['weight'] = 1
+
+    source, target = 0, n - 1
+
+    # Original shortest path
+    original_dist = nx.shortest_path_length(G, source, target, weight='weight')
+
+    # Pick one edge and increase weight
+    edge = list(G.edges())[n // 2]
+    G[edge[0]][edge[1]]['weight'] = 5
+
+    new_dist = nx.shortest_path_length(G, source, target, weight='weight')
+
+    # Shortest path must increase
+    assert new_dist > original_dist, (
+        "Shortest path did not increase after increasing edge weight."
+    )
+
+    # MST should still be the same structure (tree)
+    T = nx.minimum_spanning_tree(G)
+    assert nx.is_tree(T)
+    assert T.number_of_edges() == n - 1
+
+    
 # ================================
 # Robustness & Bug Exploration Tests
 # We systematically attempted to identify potential issues in NetworkX by testing:
