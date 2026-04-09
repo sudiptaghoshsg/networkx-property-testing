@@ -1296,6 +1296,61 @@ def test_small_graph_edge_cases(n):
         assert nx.is_tree(T)
 
 
+@settings(max_examples=200)
+@given(st.integers(min_value=3, max_value=10))
+def test_single_edge_weight_perturbation(n):
+    """
+    Property (Boundary + Sensitivity Test):
+        Small local changes in edge weights should produce predictable
+        and consistent changes in shortest paths and MST.
+
+    Mathematical Foundation:
+        In a path graph, there is exactly one simple path between any
+        two nodes. Therefore, increasing the weight of any edge on
+        that path must increase the total shortest path length.
+
+        Similarly, for a tree (like a path graph), the MST is the graph
+        itself. Changing weights should not change its structure.
+
+    Test Strategy:
+        1. Generate a path graph (unique paths)
+        2. Assign unit weights
+        3. Increase weight of one edge
+        4. Verify:
+            - shortest path increases correctly
+            - MST structure remains unchanged
+
+    Why This Matters:
+        Ensures algorithms respond correctly to small perturbations
+        and do not exhibit unstable or inconsistent behavior.
+    """
+    G = nx.path_graph(n)
+
+    # Assign unit weights
+    for u, v in G.edges():
+        G[u][v]['weight'] = 1
+
+    source, target = 0, n - 1
+
+    # Original shortest path
+    original_dist = nx.shortest_path_length(G, source, target, weight='weight')
+
+    # Pick one edge and increase weight
+    edge = list(G.edges())[n // 2]
+    G[edge[0]][edge[1]]['weight'] = 5
+
+    new_dist = nx.shortest_path_length(G, source, target, weight='weight')
+
+    # Shortest path must increase
+    assert new_dist > original_dist, (
+        "Shortest path did not increase after increasing edge weight."
+    )
+
+    # MST should still be the same structure (tree)
+    T = nx.minimum_spanning_tree(G)
+    assert nx.is_tree(T)
+    assert T.number_of_edges() == n - 1
+
 
 # ================================
 # Robustness & Bug Exploration Tests
@@ -1373,29 +1428,29 @@ def test_dijkstra_negative_weight_detection(G):
 @given(st.integers(min_value=4, max_value=10))
 def test_mst_dense_graph_cut_property(n):
     """
-Property (Invariant — Cut Property on Dense Graphs):
-    For any cut in a graph, the minimum-weight edge crossing the cut
-    must belong to the MST when the minimum is unique.
+    Property (Invariant — Cut Property on Dense Graphs):
+        For any cut in a graph, the minimum-weight edge crossing the cut
+        must belong to the MST when the minimum is unique.
 
-Mathematical Foundation:
-    The cut property is a fundamental theorem underlying MST algorithms
-    such as Kruskal’s and Prim’s. Dense graphs (complete graphs) maximize
-    the number of edges and cuts, providing a strong stress test.
+    Mathematical Foundation:
+        The cut property is a fundamental theorem underlying MST algorithms
+        such as Kruskal’s and Prim’s. Dense graphs (complete graphs) maximize
+        the number of edges and cuts, providing a strong stress test.
 
-Assumptions:
-    - Graph is complete (dense)
-    - Edge weights are positive
-    - The minimum crossing edge for a cut is unique
+    Assumptions:
+        - Graph is complete (dense)
+        - Edge weights are positive
+        - The minimum crossing edge for a cut is unique
 
-Test Strategy:
-    Generate a complete graph with deterministically assigned positive weights.
-    For each single-node cut S = {v}, identify the minimum crossing edge and
-    verify it is included in the MST.
+    Test Strategy:
+        Generate a complete graph with deterministically assigned positive weights.
+        For each single-node cut S = {v}, identify the minimum crossing edge and
+        verify it is included in the MST.
 
-Why This Matters:
-    Violating the cut property indicates a fundamental correctness issue in MST
-    construction, as the cut property is both necessary and sufficient for
-    optimality in greedy MST algorithms like Kruskal’s and Prim’s.
+    Why This Matters:
+        Violating the cut property indicates a fundamental correctness issue in MST
+        construction, as the cut property is both necessary and sufficient for
+        optimality in greedy MST algorithms like Kruskal’s and Prim’s.
     """
 
 
@@ -1427,3 +1482,114 @@ Why This Matters:
                 f"BUG FOUND: Cut property violated. Edge ({u},{v}) "
                 f"with weight={min_weight} missing from MST."
             )
+
+
+@settings(max_examples=500)
+@given(connected_weighted_graphs())
+def test_dijkstra_floating_point_consistency(G):    
+    """
+    Property (Robustness — Floating Point Consistency):
+        Shortest path results from Dijkstra and Bellman-Ford should be
+        numerically consistent within floating-point tolerance.
+
+    Mathematical Foundation:
+        Floating-point arithmetic is not exact (IEEE 754). Different
+        accumulation orders may introduce small rounding differences.
+        Both algorithms should still agree within a small tolerance.
+
+    Assumptions:
+        - Graph is connected
+        - Edge weights are floating-point values (non-negative)
+
+    Test Strategy:
+        Assign floating-point weights to edges and compare shortest
+        path lengths computed by Dijkstra and Bellman-Ford within
+        a tolerance (1e-9).
+
+    Why This Matters:
+        Ensures numerical stability and consistency across algorithms,
+        preventing discrepancies due to floating-point precision issues.
+    """
+
+    # Assign floating-point weights
+    float_weights = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    for i, (u, v) in enumerate(G.edges()):
+        G[u][v]['weight'] = float_weights[i % len(float_weights)]
+
+    nodes = list(G.nodes())
+    source, target = nodes[0], nodes[-1]
+
+    d_dijkstra = nx.shortest_path_length(G, source, target, weight='weight')
+    d_bellman  = nx.shortest_path_length(
+        G, source, target, weight='weight', method='bellman-ford'
+    )
+
+    # Use tolerance comparison
+    assert abs(d_dijkstra - d_bellman) < 1e-9, (
+        f"BUG FOUND: Dijkstra={d_dijkstra}, Bellman-Ford={d_bellman}, "
+        f"diff={abs(d_dijkstra - d_bellman)}"
+    )
+
+
+@settings(max_examples=300)
+@given(st.integers(min_value=3, max_value=20))
+def test_multigraph_mst_properties(n):
+    """
+    Property (Robustness — MultiGraph MST):
+        The MST of a MultiGraph must satisfy tree properties and correctly
+        select the minimum-weight edge among parallel edges.
+
+    Mathematical Foundation:
+        In a MultiGraph, multiple edges may connect the same pair of nodes.
+        MST algorithms must choose the minimum-weight edge among parallel
+        edges while maintaining a valid spanning tree.
+
+    Assumptions:
+        - Graph is connected
+        - Parallel edges exist with distinct weights
+
+    Test Strategy:
+        Construct a MultiGraph with duplicate edges:
+            - One high-weight edge (weight = 5)
+            - One low-weight edge (weight = 1)
+        for each pair of consecutive nodes.
+        Verify:
+            - MST has n−1 edges
+            - MST is connected
+            - MST selects only minimum-weight edges
+            - MST edges belong to the original graph
+
+    Why This Matters:
+        Incorrect handling of parallel edges can lead to suboptimal MSTs
+        or incorrect edge selection in real-world multigraph scenarios.
+    """
+
+    MG = nx.MultiGraph()
+    MG.add_nodes_from(range(n))
+
+    # Add parallel edges: high weight and low weight
+    for i in range(n - 1):
+        MG.add_edge(i, i + 1, weight=5)  # high-weight edge
+        MG.add_edge(i, i + 1, weight=1)  # low-weight edge (should be chosen)
+
+    T = nx.minimum_spanning_tree(MG)
+
+    # Tree properties
+    assert T.number_of_edges() == n - 1
+    assert nx.is_connected(T)
+
+    # Subgraph property
+    for u, v, data in T.edges(data=True):
+        assert MG.has_edge(u, v)
+
+    # Total weight must be minimal (all edges weight = 1)
+    mst_weight = sum(d['weight'] for _, _, d in T.edges(data=True))
+    assert mst_weight == n - 1, (
+        f"Incorrect MST weight: {mst_weight}, expected {n - 1}"
+    )
+
+    # Strong check: ensure only lowest-weight edges are chosen
+    for _, _, d in T.edges(data=True):
+        assert d['weight'] == 1, (
+            "MST selected a higher-weight parallel edge instead of the minimum."
+        )
