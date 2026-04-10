@@ -504,6 +504,23 @@ Full results — Python 3.13 · Hypothesis 6.151.9:
 
 ---
 
+## Limitations & Future Work
+
+### Limitations
+- **Scalability:** Some properties (e.g., enumeration of all simple paths) are computationally expensive and limit graph size  
+- **Restricted domain:** Focus on non-negative and controlled weight distributions  
+- **Library-level validation:** Tests validate NetworkX behavior, not internal implementations  
+- **Non-exhaustive guarantees:** Property-based testing increases confidence but does not constitute a formal proof of correctness  
+
+### Future Work
+- **Formal verification:** Integrate property-based testing with formal methods (e.g., SMT solvers or theorem provers) to obtain stronger correctness guarantees
+- **Adversarial input generation:** Develop strategies that actively construct worst-case graphs targeting algorithmic weaknesses  
+- **Probabilistic analysis:** Study statistical failure probabilities and confidence bounds for property-based testing at scale  
+- **Distributed / large-scale testing:** Extend testing to very large graphs using parallel or distributed frameworks  
+- **Cross-library validation:** Compare behavior across multiple graph libraries to detect inconsistencies in algorithm implementations
+
+-----------
+
 ## ◈ Resources
 
 - [Hypothesis Documentation](https://hypothesis.readthedocs.io/) — Property-based testing library
