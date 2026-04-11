@@ -514,7 +514,8 @@ Full results — Python 3.13 · Hypothesis 6.151.9:
 
 ### Future Work
 - **Formal verification:** Integrate property-based testing with formal methods (e.g., SMT solvers or theorem provers) to obtain stronger correctness guarantees
-- **Adversarial input generation:** Develop strategies that actively construct worst-case graphs targeting algorithmic weaknesses  
+- **Adversarial input generation:** Develop strategies that actively construct worst-case graphs targeting algorithmic weaknesses
+- **Extended graph models:** Incorporate directed graphs, weighted directed cycles, and flow-based algorithms (e.g., max-flow, min-cut)  
 - **Probabilistic analysis:** Study statistical failure probabilities and confidence bounds for property-based testing at scale  
 - **Distributed / large-scale testing:** Extend testing to very large graphs using parallel or distributed frameworks  
 - **Cross-library validation:** Compare behavior across multiple graph libraries to detect inconsistencies in algorithm implementations
