@@ -253,20 +253,22 @@ def test_shortest_path_self_distance(G):
         The shortest path distance from any node to itself is zero.
 
     Mathematical Foundation:
-        The trivial path from a node to itself uses zero edges and has
-        zero total weight. No path can have negative length (weights ≥ 1
-        here), so zero is both the minimum and the correct answer.
+        The trivial path from a node to itself uses zero edges and therefore
+        has total weight 0. Since all edge weights are non-negative, no
+        alternative path can yield a smaller value.
 
     Test Strategy:
-        Use the custom strategy for varied-weight graphs. Verify that the
-        weighted self-distance of the first node is exactly 0.
+        Use the custom strategy for varied-weight graphs. Select a fixed node
+        (first in the node list) for determinism and verify that its weighted
+        self-distance is exactly 0 across all generated examples.
 
     Preconditions:
-        Edge weights must be non-negative (all weights ≥ 1 here).
+        Edge weights must be non-negative (guaranteed by the strategy).
 
     Why This Matters:
-        A non-zero self-distance would mean the algorithm is traversing
-        unnecessary edges or miscounting path lengths — a basic correctness failure.
+        This is a fundamental base-case invariant of shortest-path algorithms.
+        A non-zero self-distance indicates incorrect initialization or
+        unnecessary edge traversal — a basic correctness failure.
     """
     node = list(G.nodes())[0]
 
@@ -285,22 +287,24 @@ def test_shortest_path_validity(G):
 
     Mathematical Foundation:
         A path is defined as a sequence of nodes where each consecutive pair
-        is adjacent (connected by an edge). If the algorithm returns a sequence
-        where any consecutive pair is NOT an edge, it has returned something
-        that is not a valid path at all — regardless of its length.
+        is adjacent (connected by an edge). If any consecutive pair
+        is not an edge in the graph, the returned sequence is not a valid path,
+        violating the definition itself.
 
     Test Strategy:
         Use the custom connected_weighted_graphs() strategy to generate graphs
-        with varied weights. Compute the shortest path between the first and
-        last node, then verify every step (u→v) in the path is a real edge in G.
+        with varied weights. Select fixed nodes (first and last) for determinism,
+        compute the shortest path, and verify that every step (u → v) corresponds
+        to a real edge in G across all generated examples.
 
     Preconditions:
         Graph must be connected so a path always exists.
 
     Why This Matters:
-        An invalid path (containing non-existent edges) would mean the algorithm
-        is fabricating connections — a catastrophic correctness failure that
-        would corrupt any application relying on the path.
+        Returning a path with non-existent edges violates the graph abstraction
+        and indicates a fundamental implementation error. Any downstream system
+        relying on this path (e.g., routing or scheduling) would operate on
+        invalid structure, leading to incorrect results.
     """
     nodes = list(G.nodes())
     source, target = nodes[0], nodes[-1]
@@ -579,6 +583,7 @@ def test_mst_edge_count(G):
         induction: a single node has 0 edges; each additional node added to
         a tree requires exactly 1 new edge to connect it. Fewer edges would
         leave some node disconnected; more edges would create a cycle.
+        Conversely, any connected graph with n−1 edges is a tree.
 
     Test Strategy:
         Use the custom strategy to generate varied-weight connected graphs.
@@ -589,12 +594,13 @@ def test_mst_edge_count(G):
         The input graph must be connected so that a spanning tree exists.
 
     Why This Matters:
-        If the MST has fewer than n-1 edges, some nodes are not spanned.
-        If it has more, it contains a cycle and is not a tree at all.
+        If the MST has fewer than n-1 edges, it does not span all nodes.
+        If it has more, it contains a cycle and violates the definition of a tree.      
     """
     n = G.number_of_nodes()
     T = nx.minimum_spanning_tree(G)
 
+    assert T.number_of_nodes() == n  # ensures spanning
     assert T.number_of_edges() == n - 1, (
         f"MST has {T.number_of_edges()} edges, expected {n - 1}."
     )
@@ -609,22 +615,22 @@ def test_mst_is_tree(G):
         i.e., a valid tree.
 
     Mathematical Foundation:
-        By definition, a spanning tree is a subgraph that (1) connects all
-        vertices (is connected) and (2) contains no cycles (is acyclic).
-        A graph that is both connected and acyclic is called a tree.
-        NetworkX's nx.is_tree checks both conditions simultaneously.
+        A graph is a tree if and only if it is both connected and acyclic.
+        A spanning tree is therefore a subgraph that includes all vertices,
+        is connected, and contains no cycles. NetworkX's nx.is_tree checks both conditions simultaneously.
 
     Test Strategy:
         Use the custom strategy for 200 varied-weight graphs. Compute the MST
-        and pass it to nx.is_tree, which returns True iff connected and acyclic.
+        and verify structural correctness using nx.is_tree. This test focuses
+        on structural validity (connectivity + acyclicity), independent of edge count.
 
     Preconditions:
         Input graph must be connected.
 
     Why This Matters:
-        If nx.is_tree returns False, the algorithm has produced either a
-        disconnected subgraph (not spanning) or a subgraph with cycles
-        (not a tree) — both are fundamental correctness failures.
+        If nx.is_tree returns False, the algorithm has produced a structure
+        that violates the definition of a tree — either disconnected or cyclic —
+        indicating a fundamental correctness failure.
     """
     T = nx.minimum_spanning_tree(G)
 
@@ -642,19 +648,21 @@ def test_mst_spans_all_nodes(G):
 
     Mathematical Foundation:
         The word 'spanning' in 'spanning tree' means the tree covers all
-        vertices of the original graph. A subgraph that misses even one
-        vertex is not a spanning tree.
+        vertices of the original graph. Therefore, the node set of the MST
+        must be identical to the node set of the original graph.
 
     Test Strategy:
-        Use the custom strategy for 200 varied-weight graphs. Compare the
-        node set of the MST with the node set of the original graph.
+        Use the custom strategy for 200 varied-weight graphs. Compute the MST
+        and assert exact equality between the node sets of the MST and the
+        original graph.
 
     Preconditions:
         Input graph must be connected.
 
     Why This Matters:
-        dropped a vertex — corrupting any downstream computation relying
-        on full vertex coverage.
+        If this test fails, the MST has dropped a vertex — it is not spanning,
+        violating the definition of a spanning tree and corrupting any
+        downstream computation relying on full vertex coverage.
     """
     T = nx.minimum_spanning_tree(G)
 
@@ -667,25 +675,27 @@ def test_mst_spans_all_nodes(G):
 @given(connected_weighted_graphs())
 def test_mst_edge_removal_disconnects(G):
     """
-    Property (Metamorphic):
+    Property (Invariant):
         Removing any single edge from the MST must disconnect it.
 
     Mathematical Foundation:
         A tree is minimally connected: it has exactly enough edges to keep
-        all vertices connected. Every edge in a tree is a bridge — removing
-        it splits the tree into exactly two components. This is a direct
-        consequence of having n-1 edges for n vertices with no cycles.
+        all vertices connected. Every edge in a tree is a bridge (cut-edge) — 
+        removing it splits the tree into exactly two components. TThis follows
+        from the fact that a tree has n−1 edges and contains no cycles.
 
     Test Strategy:
         Use the custom strategy for 200 varied-weight graphs. Compute the MST,
-        remove its first edge, and assert the resulting graph is disconnected.
+        remove a fixed edge (first in the edge list) for determinism, and assert
+        that the resulting graph is disconnected.
 
     Preconditions:
-        MST must have at least one edge (n ≥ 2, guaranteed by strategy).
+        Graph must have at least 2 nodes (guaranteed by the strategy, n ≥ 3).
 
     Why This Matters:
-        If the graph remains connected after removing an MST edge, the MST
-        contained a redundant edge — meaning it has a cycle and is not a tree.
+        If the graph remains connected after removing an MST edge, the structure
+        is not minimally connected — implying the presence of a cycle and
+        violating the definition of a tree.
     """
     T = nx.minimum_spanning_tree(G)
 
@@ -706,26 +716,29 @@ def test_mst_idempotence(G):
         Applying the MST algorithm to an MST yields the same tree.
 
     Mathematical Foundation:
-        An MST T of a graph G is itself a tree. The MST of a tree T is T
-        itself, because T is already acyclic and connected — there is only
-        one spanning tree of a tree (the tree itself), so the algorithm
-        must return it unchanged.
+        An MST T of a graph G is itself a tree. An MST T of a graph G is itself a tree.
+        A tree has exactly one spanning tree — itself — since it is already connected and acyclic.
+        Therefore, applying the MST algorithm to T must return T unchanged, independent of edge weights.
 
     Test Strategy:
         Use the custom strategy for 200 varied-weight graphs. Compute
-        T1 = MST(G), then T2 = MST(T1), and assert identical edge sets.
-
+        T1 = MST(G), then T2 = MST(T1), and assert that their edge sets
+        are identical (up to unordered edge representation).
+        
     Preconditions:
         Input graph must be connected.
 
     Why This Matters:
-        If MST(MST(G)) ≠ MST(G), the algorithm is not stable — producing
-        different results depending on how many times it is applied.
+        If MST(MST(G)) ≠ MST(G), the algorithm is not stable under repeated
+        application — indicating a violation of fundamental tree properties.
     """
     T1 = nx.minimum_spanning_tree(G)
     T2 = nx.minimum_spanning_tree(T1)
-
-    assert set(T1.edges()) == set(T2.edges()), (
+    
+    edges_T1 = set(map(frozenset, T1.edges()))
+    edges_T2 = set(map(frozenset, T2.edges()))
+    
+    assert edges_T1 == edges_T2, (
         "MST is not idempotent: MST(MST(G)) ≠ MST(G)."
     )
 
