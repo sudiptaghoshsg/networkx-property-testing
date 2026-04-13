@@ -2,16 +2,15 @@
 
 <br/>
 
-```
-╔══════════════════════════════════════════════════════════════════╗
-║                                                                  ║
-║       PROPERTY-BASED TESTING FOR GRAPH ALGORITHMS               ║
-║       NetworkX · Hypothesis · pytest                            ║
-║                                                                  ║
-╚══════════════════════════════════════════════════════════════════╝
-```
+<table border="4" bordercolor="#444" cellpadding="18" cellspacing="0" style="border-collapse:collapse; display:inline-block;">
+  <tr>
+    <td align="center" style="font-size:5.3em; font-weight:bold; letter-spacing:2px; padding: 20px 48px;">
+      PROPERTY-BASED TESTING FOR GRAPH ALGORITHMS
+    </td>
+  </tr>
+</table>
 
-<br/>
+<br/><br/>
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Tests](https://img.shields.io/badge/Tests-32%20Passing-22C55E?style=for-the-badge&logo=checkmarx&logoColor=white)](https://github.com/sudiptaghoshsg/networkx-property-testing)
@@ -22,9 +21,24 @@
 
 <br/>
 
-**Authors:** Sudipta Ghosh &nbsp;·&nbsp; Shambo Samanta  
-**Course:** Data Structures and Graph Analytics  
-**Institution:** Indian Institute of Science (IISc)
+<table cellpadding="10" cellspacing="0" border="0">
+  <tr>
+    <td align="center" valign="top" style="padding: 0 32px;">
+      <strong>Sudipta Ghosh</strong><br/>
+      SR No: 13-19-02-19-52-24-1-24485<br/>
+      <a href="mailto:sudiptag@iisc.ac.in">sudiptag@iisc.ac.in</a>
+    </td>
+    <td align="center" valign="top" style="padding: 0 32px; border-left: 1px solid #555;">
+      <strong>Shambo Samanta</strong><br/>
+      SR No: 13-19-02-19-52-24-1-24505<br/>
+      <a href="mailto:shambos@iisc.ac.in">shambos@iisc.ac.in</a>
+    </td>
+  </tr>
+</table>
+
+<br/>
+
+**Course:** E0 251o: Data Structures and Graph Analytics <br/> **Institution:** Indian Institute of Science (IISc)
 
 <br/>
 
