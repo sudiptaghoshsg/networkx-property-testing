@@ -5,7 +5,7 @@
 <table border="4" bordercolor="#444" cellpadding="18" cellspacing="0" style="border-collapse:collapse; display:inline-block;">
   <tr>
     <td align="center" style="font-size:5.3em; font-weight:bold; letter-spacing:2px; padding: 20px 48px;">
-      PROPERTY-BASED TESTING FOR GRAPH ALGORITHMS
+      <h1 align="center">Property-Based Testing for NetworkX Graph Algorithms</h1>
     </td>
   </tr>
 </table>
@@ -99,7 +99,10 @@ networkx-property-testing/
 ├── README.md                    # This file
 │
 └── docs/
-    └── output.jpg               # Screenshot of full test run results
+    └── Output_RunningSinglePropertyTest.jpg       # Screenshot of full test run results
+    └── output.gif                                 # Screenshot of full test run results
+    └── output.log                                 # log of the test run 
+    └── output.png                                 # Screenshot of full test run results
 ```
 
 ---
@@ -135,7 +138,7 @@ pytest test_graph_properties.py -v --hypothesis-show-statistics
 
 ## ◈ Test Run Output
 
-![Test Run Output](docs/output.jpg)
+![Test Run Output](docs/output.gif)
 
 ---
 
@@ -271,7 +274,7 @@ def connected_weighted_graphs(draw):
 
 ---
 
-#### `test_mst_edge_removal_disconnects` — *Metamorphic*
+#### `test_mst_edge_removal_disconnects` — *Invariant*
 > Removing any single edge from the MST must disconnect it.
 
 **Foundation:** A tree is minimally connected — every edge is a bridge. Removing any edge splits the tree into exactly two components. If the graph remains connected after removal, the MST contained a redundant edge, meaning it has a cycle and is not a valid tree.
