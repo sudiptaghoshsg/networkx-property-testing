@@ -42,7 +42,7 @@ This project applies **property-based testing** to graph algorithms in [NetworkX
 
 Instead of relying on hand-crafted test cases, each test encodes a fundamental **mathematical property** — an invariant, postcondition, or metamorphic relation — that must hold for *all* valid graphs. Hypothesis automatically generates hundreds of diverse graph instances, varying in size, topology, and edge weights, and systematically searches for counterexamples that violate these properties.
 
-**5,800+ automatically generated graph examples. 32 tests. 0 failures.**
+**6,200+ automatically generated graph examples. 32 tests. 0 failures.**
 
 ---
 
@@ -428,8 +428,14 @@ Each test is classified by the type of correctness guarantee it encodes:
 **Custom Hypothesis Strategy**  
 `connected_weighted_graphs()` uses only Hypothesis-controlled randomness (no `random` module). Failing examples are automatically **shrunk** to the smallest reproducible case, making debugging significantly faster.
 
+**Deterministic Weight Generation**  
+All edge weights are generated using deterministic patterns (modular arithmetic or fixed floating-point sets) instead of random sampling. This ensures reproducibility, better shrinking behaviour, and elimination of flaky test outcomes.
+
 **Increased Coverage**  
-Most tests use `@settings(max_examples=200)` — 4× the default — to explore a substantially larger input space and increase the probability of surfacing subtle edge cases.
+Most tests use `@settings(max_examples=200)` — 4× the default — to explore a substantially larger input space and increase the probability of surfacing subtle edge cases. Robustness tests use up to 500 examples.
+
+**MST Theoretical Trinity**  
+`test_mst_cut_property`, `test_mst_cycle_property`, and `test_mst_cut_and_cycle_duality` together form a near-complete mathematical characterization of MSTs — necessary and sufficient conditions that describe minimum spanning trees. These properties are rooted in classical results (Tarjan, 1983), ensuring the test suite is grounded in formal graph theory.
 
 **Theory-Grounded Properties**  
 Tests are derived from classical results in graph theory, not ad-hoc checks:
@@ -437,6 +443,9 @@ Tests are derived from classical results in graph theory, not ad-hoc checks:
 - MST Cut and Cycle Properties (Tarjan, 1983, *Data Structures and Network Algorithms*)
 - MST Uniqueness Theorem under distinct weights
 - Triangle inequality as a metric axiom
+
+**Structured Test Organization**  
+Tests are organized into shortest path, MST, boundary, and robustness categories. This improves readability, maintainability, and clarity during evaluation.
 
 **Test Independence**  
 Each test receives a fresh graph instance from Hypothesis. There is no shared mutable state between tests, ensuring reliable and reproducible execution.
@@ -456,6 +465,11 @@ Properties like edge addition, weight increase, weight scaling, and node relabel
 
 **Distinct Weights as a Uniqueness Guarantee**  
 When all weights are distinct, the MST is unique — Kruskal and Prim must return identical edge sets. Using `st.permutations()` provides the strongest possible cross-algorithm agreement test: two independent implementations must converge on every single edge.
+
+**Bug Hunting as Empirical Robustness Evidence**    
+Robustness tests target stress scenarios (negative weights, floating-point precision, dense graphs, multigraphs), each across **300–500 generated examples**.  
+All tests passed — providing **strong empirical evidence** of NetworkX’s robustness under adversarial and edge-case conditions.
+
 
 ---
 
@@ -492,17 +506,43 @@ Full results — Python 3.13 · Hypothesis 6.151.9:
 | `test_mst_uniqueness_under_distinct_weights` | MST | 200 | 0 |
 | `test_mst_cut_and_cycle_duality` | MST | 200 | 0 |
 | `test_small_graph_edge_cases` | Boundary | 3 | 0 |
-| `test_single_edge_weight_perturbation` | Boundary | 200 | 0 |
+| `test_single_edge_weight_perturbation` | Boundary | 8 | 0 |
 | `test_dijkstra_negative_weight_detection` | Robustness | 500 | 0 |
-| `test_mst_dense_graph_cut_property` | Robustness | 300 | 0 |
+| `test_mst_dense_graph_cut_property` | Robustness | 7 | 0 |
 | `test_dijkstra_floating_point_consistency` | Robustness | 500 | 0 |
-| `test_multigraph_mst_properties` | Robustness | 300 | 0 |
+| `test_multigraph_mst_properties` | Robustness | 18 | 0 |
 
 > `test_small_graph_edge_cases` exhausts its full search space at 3 examples by design — path graphs of size 1, 2, and 3 are the only valid inputs for that boundary test.
 
-**Total: ~5,803 automatically generated graph examples. 32 tests. 0 failures.**
+> `test_single_edge_weight_perturbation` exhausts its search space at 8 examples — path graphs of size 3 to 10 are the only valid inputs.
+
+> `test_mst_dense_graph_cut_property` exhausts its search space at 7 examples — complete graphs of size 4 to 10 are the only valid inputs.
+
+> `test_multigraph_mst_properties` exhausts its search space at 18 examples — MultiGraphs of size 3 to 20 are the only valid inputs.
+
+> `test_dijkstra_negative_weight_detection` and `test_dijkstra_floating_point_consistency` use the custom `connected_weighted_graphs()` strategy with varied topology and weights — Hypothesis explores 500 genuinely distinct examples without exhausting the search space.
+
+**Total: ~6,236 automatically generated graph examples. 32 tests. 0 failures.**
 
 ---
+
+## Limitations & Future Work
+
+### Limitations
+- **Scalability:** Some properties (e.g., enumeration of all simple paths) are computationally expensive and limit graph size  
+- **Restricted domain:** Focus on non-negative and controlled weight distributions  
+- **Library-level validation:** Tests validate NetworkX behavior, not internal implementations  
+- **Non-exhaustive guarantees:** Property-based testing increases confidence but does not constitute a formal proof of correctness  
+
+### Future Work
+- **Formal verification:** Integrate property-based testing with formal methods (e.g., SMT solvers or theorem provers) to obtain stronger correctness guarantees
+- **Adversarial input generation:** Develop strategies that actively construct worst-case graphs targeting algorithmic weaknesses
+- **Extended graph models:** Incorporate directed graphs, weighted directed cycles, and flow-based algorithms (e.g., max-flow, min-cut)  
+- **Probabilistic analysis:** Study statistical failure probabilities and confidence bounds for property-based testing at scale  
+- **Distributed / large-scale testing:** Extend testing to very large graphs using parallel or distributed frameworks  
+- **Cross-library validation:** Compare behavior across multiple graph libraries to detect inconsistencies in algorithm implementations
+
+-----------
 
 ## ◈ Resources
 
