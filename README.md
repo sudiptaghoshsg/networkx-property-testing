@@ -1,16 +1,6 @@
 <div align="center">
-
-<br/>
-
-<table border="4" bordercolor="#444" cellpadding="18" cellspacing="0" style="border-collapse:collapse; display:inline-block;">
-  <tr>
-    <td align="center" style="font-size:5.3em; font-weight:bold; letter-spacing:2px; padding: 20px 48px;">
-      <h1 align="center">Property-Based Testing for NetworkX Graph Algorithms</h1>
-    </td>
-  </tr>
-</table>
-
-<br/><br/>
+<h1 align="center">Property-Based Testing for NetworkX Graph Algorithms</h1>
+ <br/>
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Tests](https://img.shields.io/badge/Tests-32%20Passing-22C55E?style=for-the-badge&logo=checkmarx&logoColor=white)](https://github.com/sudiptaghoshsg/networkx-property-testing)
@@ -19,8 +9,9 @@
 [![NetworkX](https://img.shields.io/badge/NetworkX-Graph%20Library-84CC16?style=for-the-badge)](https://networkx.org/)
 [![License](https://img.shields.io/badge/License-MIT-EAB308?style=for-the-badge)](https://github.com/sudiptaghoshsg/networkx-property-testing/blob/main/LICENSE)
 
-<br/>
-
+<div align="center">
+<h4>Authors</h4>
+</div>
 <table cellpadding="10" cellspacing="0" border="0">
   <tr>
     <td align="center" valign="top" style="padding: 0 32px;">
@@ -34,7 +25,6 @@
   </tr>
 </table>
 
-<br/>
 
 **Course:** E0 251o: Data Structures and Graph Analytics <br/> **Institution:** Indian Institute of Science (IISc)
 
@@ -42,7 +32,6 @@
 
 > *"Instead of asking 'does this example work?' — we ask 'does this property always hold?'"*
 
-<br/>
 
 </div>
 
@@ -94,15 +83,15 @@ This project bridges **formal graph theory** and **practical software verificati
 ```
 networkx-property-testing/
 │
-├── test_graph_properties.py     # All 32 property-based tests
-├── requirements.txt             # Python dependencies
+├── test_graph_properties.py     # Property-based test suite (32 tests)
+├── requirements.txt             # Project dependencies
 ├── README.md                    # This file
 │
 └── docs/
-    └── Output_RunningSinglePropertyTest.jpg       # Screenshot of full test run results
-    └── output.gif                                 # Screenshot of full test run results
-    └── output.log                                 # log of the test run 
-    └── output.png                                 # Screenshot of full test run results
+    ├── output.gif               # Full test run (animated)
+    ├── output.png               # Full test run (screenshot)
+    ├── output.log               # Test execution log
+    └── output_single_test.jpg   # Single test execution (example)
 ```
 
 ---
