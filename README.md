@@ -123,7 +123,7 @@ pytest test_graph_properties.py -v --hypothesis-show-statistics
 
 ## ◈ Test Run Output
 
-![Test Run Output](docs/output.jpg)
+![Test Run Output](docs/output.gif)
 
 ---
 
