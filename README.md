@@ -26,12 +26,10 @@
     <td align="center" valign="top" style="padding: 0 32px;">
       <strong>Sudipta Ghosh</strong><br/>
       SR No: 13-19-02-19-52-24-1-24485<br/>
-      <a href="mailto:sudiptag@iisc.ac.in">sudiptag@iisc.ac.in</a>
     </td>
     <td align="center" valign="top" style="padding: 0 32px; border-left: 1px solid #555;">
       <strong>Shambo Samanta</strong><br/>
       SR No: 13-19-02-19-52-24-1-24505<br/>
-      <a href="mailto:shambos@iisc.ac.in">shambos@iisc.ac.in</a>
     </td>
   </tr>
 </table>
