@@ -67,8 +67,8 @@ This project bridges **formal graph theory** and **practical software verificati
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │  SHORTEST PATH                                                       │
-│  └─ Dijkstra (weighted graphs) · BFS (unit-weight graphs)           │
-│     nx.shortest_path  ·  nx.shortest_path_length                    │
+│  └─ Dijkstra (weighted graphs) · BFS (unit-weight graphs)            │
+│     nx.shortest_path  ·  nx.shortest_path_length                     │
 │                                                                      │
 │  MINIMUM SPANNING TREE                                               │
 │  └─ Kruskal  ·  Prim                                                 │
