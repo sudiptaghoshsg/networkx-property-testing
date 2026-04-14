@@ -759,11 +759,12 @@ def test_mst_cut_property(G):
         Adding e to T creates a cycle. That cycle must cross the cut at least
         twice, so another cut edge e' is in T. Since e is the minimum cut edge,
         w(e) ≤ w(e'). Swapping e' for e gives a spanning tree of equal or
-        lesser weight — contradicting T being the unique MST if weights differ.
+        lesser weight — contradicting T being an MST when edge weights are distinct.
 
     Test Strategy:
-        Use the custom strategy (varied weights) to generate graphs. Take the
-        first node as the cut set S = {nodes[0]}, and V\\S = all other nodes.
+        Use the custom strategy connected_weighted_graphs(), which generates
+        connected graphs with 3–10 nodes and positive integer edge weights (1–20).
+        Take the first node as the cut set S = {nodes[0]}, and V\\S = all other nodes.
         Find the minimum weight edge crossing this cut and assert it is in the MST.
 
     Preconditions:
@@ -822,14 +823,16 @@ def test_mst_on_disconnected_graph_returns_forest(G1, G2):
         n - (number of components).
 
     Test Strategy:
-        Use two independent connected_weighted_graphs() draws to create two
-        separate components with varied topologies and weights. Relabel G2 to
-        avoid node ID collisions, compose into a disconnected graph, and verify:
+        Use two independent connected_weighted_graphs() draws, which generate
+        connected graphs with 3–10 nodes and positive integer weights (1–20).
+        Relabel G2 to avoid node ID collisions, compose into a disconnected graph, and verify 
+        across 200 generated examples:
         (1) total edges = (n1 - 1) + (n2 - 1)
         (2) the forest has exactly 2 connected components.
 
     Preconditions:
-        The two sub-graphs must be non-empty and not connected to each other.
+        The two sub-graphs must be non-empty, connected, and disjoint
+        (enforced via relabeling and composition).
 
     Why This Matters:
         Many MST implementations assume connected input. Testing on disconnected
@@ -1028,14 +1031,15 @@ def test_mst_total_weight_minimality(G):
         enumerate every spanning tree of G and assert none is cheaper.
 
         A spanning tree of G is any connected acyclic subgraph that includes
-        all vertices. NetworkX's nx.SpanningTreeIterator enumerates all of
-        them in order of increasing weight.
+        all vertices. NetworkX's nx.SpanningTreeIterator enumerates all spanning trees of the graph.
 
     Test Strategy:
-        Use the custom strategy for small varied-weight graphs (≤ 7 nodes
-        to keep enumeration tractable). Compute the MST weight, then use
-        nx.SpanningTreeIterator to enumerate ALL spanning trees and verify
-        none has a lower total weight than the MST.
+        Use the custom strategy connected_weighted_graphs(), which generates
+        connected graphs with 3–10 nodes and positive integer edge weights (1–20).
+        Restrict to small graphs (≤ 7 nodes) to keep enumeration tractable.
+        Compute the MST weight, then use nx.SpanningTreeIterator to enumerate
+        ALL spanning trees exhaustively and verify none has lower total weight
+        than the MST across 200 generated examples.
 
     Preconditions:
         Graph must be connected. Kept small (n ≤ 7) because the number of
@@ -1088,11 +1092,12 @@ def test_mst_cycle_property(G):
         all weights are distinct.
 
     Test Strategy:
-        Use the custom strategy to generate varied-weight graphs. For each
-        cycle found via nx.cycle_basis (which returns a set of fundamental
-        cycles), find the maximum weight edge in that cycle and verify it
-        is NOT in the MST. Only run this check when all edge weights in
-        the cycle are distinct (to avoid tie-breaking ambiguity).
+        Use the custom strategy connected_weighted_graphs(), which generates
+        connected graphs with 3–10 nodes and positive integer edge weights (1–20).
+        For each cycle found via nx.cycle_basis (which returns a set of fundamental
+        cycles), find the maximum weight edge in that cycle and verify it is NOT
+        in the MST. Only assert when the maximum weight edge is unique (no ties)
+        to avoid tie-breaking ambiguity across 200 generated examples.
 
     Preconditions:
         Graph must be connected and have at least one cycle (i.e., more
