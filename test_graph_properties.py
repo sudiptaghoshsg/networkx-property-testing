@@ -387,6 +387,8 @@ def test_shortest_path_optimal_substructure(G):
         v0 to vk — contradicting P being shortest.
 
     Test Strategy:
+        Use the custom strategy connected_weighted_graphs(), which generates
+        connected graphs with 3–10 nodes and positive integer edge weights (1–20).
         Compute the shortest path P from source to target. For each intermediate
         node w in P, verify that the sub-path from source to w has the same
         length as the direct shortest path from source to w.
@@ -444,10 +446,10 @@ def test_dijkstra_varied_weights(G):
         weight of any other path found via all_simple_paths.
 
     Test Strategy:
-        Use the custom strategy to generate graphs with random positive
-        weights (1–20). Compute the weighted shortest path length, then
-        enumerate all simple paths and compute their total weights to verify
-        none is cheaper.
+        Use the custom strategy connected_weighted_graphs(), which generates
+        connected graphs with 3–10 nodes and positive integer edge weights (1–20).
+        Compute the weighted shortest path length, then enumerate all simple paths 
+        and compute their total weights to verify none is cheaper.
 
     Preconditions:
         All edge weights must be positive (guaranteed by strategy: min=1).
@@ -480,7 +482,7 @@ def test_shortest_path_no_repeated_nodes(G):
     """
     Property (Postcondition):
         The shortest path returned by Dijkstra must be a simple path —
-        no node appears more than once.
+        no node appears more than once in the sequence.
 
     Mathematical Foundation:
         In a graph with non-negative edge weights, an optimal path can
@@ -491,10 +493,10 @@ def test_shortest_path_no_repeated_nodes(G):
         optimal path is always simple.
 
     Test Strategy:
-        Use the custom strategy to generate varied-weight graphs. Compute
-        the weighted shortest path between the first and last node, then
-        check that the list of nodes has no duplicates by comparing
-        len(path) with len(set(path)).
+        Use the custom strategy connected_weighted_graphs(), which generates
+        connected graphs with 3–10 nodes and positive integer edge weights (1–20).
+        Compute the weighted shortest path between the first and last node, then
+        check that the list of nodes has no duplicates by comparing len(path) with len(set(path)).
 
     Preconditions:
         Graph must be connected so a path always exists.
@@ -523,7 +525,7 @@ def test_shortest_path_length_consistency(G):
     """
     Property (Postcondition — Consistency):
         The value returned by nx.shortest_path_length must equal the sum
-        of edge weights along the path returned by nx.shortest_path.
+        of edge weights along the returned path returned by nx.shortest_path.
 
     Mathematical Foundation:
         nx.shortest_path and nx.shortest_path_length are two separate
@@ -535,8 +537,9 @@ def test_shortest_path_length_consistency(G):
         which would silently corrupt any application that uses both.
 
     Test Strategy:
-        Use the custom strategy for varied-weight graphs. Compute both the
-        path and the length between the first and last node. Manually sum
+        Use the custom strategy connected_weighted_graphs(), which generates
+        connected graphs with 3–10 nodes and positive integer edge weights (1–20).
+        Compute both the path and the length between the first and last node. Manually sum
         edge weights along the path and assert equality with reported length.
 
     Preconditions:
@@ -866,7 +869,7 @@ def test_mst_on_disconnected_graph_returns_forest(G1, G2):
 def test_mst_subgraph_property(G):
     """
     Property (Postcondition):
-        Every edge in the MST must be an edge in the original graph.
+        Every edge in the MST must correspond to an edge in the original graph.
 
     Mathematical Foundation:
         A spanning tree is by definition a subgraph of the original graph.
@@ -874,8 +877,9 @@ def test_mst_subgraph_property(G):
         select a subset of G's edges.
 
     Test Strategy:
-        Use the custom strategy for 200 varied-weight graphs. Iterate over
-        all MST edges and assert each exists in G.
+        Use the custom strategy connected_weighted_graphs(), which generates
+        connected graphs with 3–10 nodes and positive integer edge weights (1–20).
+        Iterate over all MST edges and assert each exists in G.
 
     Preconditions:
         Input graph must be connected.
@@ -907,18 +911,21 @@ def test_mst_minimal_edges_property(G):
         cycle property of trees.
 
     Test Strategy:
-        Use the custom strategy for 200 varied-weight graphs. Find an edge in G
-        not in the MST, add it to a copy of the MST, and verify the result is
-        no longer a valid tree.
+        Use the custom strategy connected_weighted_graphs(), which generates
+        connected graphs with 3–10 nodes and positive integer edge weights (1–20).
+        Find an edge in G not in the MST, add it to a copy of the MST, and verify 
+        the result is no longer a valid tree.
 
     Preconditions:
-        The graph must have at least one edge not in the MST (typical for
-        random graphs which have more edges than n-1).
+        The graph must have at least one edge not in the MST (i.e., more than n−1 edges).
 
     Why This Matters:
         If adding a non-tree edge does NOT create a cycle, the MST is missing
         an edge it should have — meaning it does not span all vertices.
     """
+    if G.number_of_edges() == G.number_of_nodes() - 1:    # Edge case: if G is already a tree, no non-tree edge exists
+        return
+        
     T = nx.minimum_spanning_tree(G)
 
     for u, v in G.edges():
@@ -946,9 +953,10 @@ def test_mst_invariant_under_relabeling(G):
         is determined entirely by edge weights and connectivity.
 
     Test Strategy:
-        Use the custom strategy for 200 varied-weight graphs. Compute MST of G,
-        relabel all nodes by adding 100, compute MST of relabeled graph, and
-        compare edge counts and total weights.
+        Use the custom strategy connected_weighted_graphs(), which generates
+        connected graphs with 3–10 nodes and positive integer edge weights (1–20).
+        Compute MST of G, relabel all nodes by adding 100, compute MST of 
+        relabeled graph, and compare edge counts and total weights.
 
     Preconditions:
         Input graph must be connected.
@@ -958,7 +966,7 @@ def test_mst_invariant_under_relabeling(G):
         using node identities to make structural decisions — a subtle but
         serious implementation flaw.
     """
-    mapping = {i: i + 100 for i in G.nodes()}
+    mapping = {node: i + 100 for i, node in enumerate(G.nodes())}  # Robust relabeling (works for any node type)
     G2 = nx.relabel_nodes(G, mapping)
 
     T1 = nx.minimum_spanning_tree(G)
@@ -991,9 +999,10 @@ def test_mst_weight_scaling(G):
         identical MST.
 
     Test Strategy:
-        Use the custom strategy for 200 varied-weight graphs. Compute T1 = MST(G),
-        then multiply all weights by 5 and compute T2 = MST(G). Assert identical
-        edge sets.
+        Use the custom strategy connected_weighted_graphs(), which generates
+        connected graphs with 3–10 nodes and positive integer edge weights (1–20).
+        Compute T1 = MST(G), then multiply all weights by 5 in a copy of G and 
+        compute T2 = MST(scaled G). Assert identical edge sets.
 
     Preconditions:
         All edge weights must be positive (guaranteed by strategy: min=1).
@@ -1003,9 +1012,9 @@ def test_mst_weight_scaling(G):
         absolute weight values rather than relative ordering — indicating it is
         not correctly implementing the greedy selection criterion.
     """
+    T1 = nx.minimum_spanning_tree(G)
+    
     G2 = G.copy()
-    T1 = nx.minimum_spanning_tree(G2)
-
     for u, v in G2.edges():
         G2[u][v]['weight'] *= 5
 
@@ -1147,7 +1156,7 @@ def test_mst_uniqueness_under_distinct_weights(G, data):
     """
     Property (Invariant — MST Uniqueness):
         When all edge weights in a graph are distinct, the MST is unique —
-        Kruskal's algorithm and Prim's algorithm must return identical edge sets.
+        Kruskal's algorithm and Prim's algorithm must return identical sets of edges.
 
     Mathematical Foundation:
         Theorem: If all edge weights are distinct, the MST is unique.
@@ -1165,9 +1174,10 @@ def test_mst_uniqueness_under_distinct_weights(G, data):
         like tie-breaking or traversal order.
 
     Test Strategy:
-        Use the custom strategy to generate graphs. Draw a random permutation
-        of 1..m (where m = number of edges) via st.permutations() to assign
-        strictly unique weights — fully controlled by Hypothesis so failing
+        Use the custom strategy connected_weighted_graphs(), which generates
+        connected graphs with 3–10 nodes and positive integer edge weights (1–20).
+        Draw a random permutation of 1..m (where m = number of edges) via st.permutations()
+        to assign strictly unique weights — fully controlled by Hypothesis so failing
         examples can be reliably shrunk and replayed. Compute MST using both
         Kruskal ('kruskal') and Prim ('prim') and assert identical edge sets.
 
@@ -1211,8 +1221,10 @@ def test_mst_cut_and_cycle_duality(G):
     Property (Invariant — Cut-Cycle Duality):
         For every edge e in the MST, e is the minimum weight edge crossing
         some cut (Cut Property). For every edge e NOT in the MST, e is the
-        maximum weight edge in some cycle (Cycle Property). Together these
-        two conditions are necessary AND sufficient to characterize the MST.
+        maximum weight edge in some cycle (Cycle Property). This test focuses
+        on the Cycle Property via fundamental cycles, which is sufficient to
+        guarantee MST optimality: no non-tree edge can replace a tree edge 
+        to produce a lower-weight spanning tree.
 
     Mathematical Foundation:
         This test unifies the Cut Property and Cycle Property into a single
@@ -1382,8 +1394,10 @@ def test_single_edge_weight_perturbation(n):
 
     # MST should still be the same structure (tree)
     T = nx.minimum_spanning_tree(G)
-    assert nx.is_tree(T)
-    assert T.number_of_edges() == n - 1
+    
+    assert set(T.edges()) == set(G.edges()), (
+    "MST structure changed after weight perturbation on a tree."
+    )
 
 
 # ================================
